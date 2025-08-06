@@ -37,10 +37,13 @@ const TrafficCard: React.FC = () => {
     }
   }
 
-  // Calculate percentage widths for bars (relative to the highest value)
+  // Calculate bubble sizes based on traffic values (relative to max value)
   const maxValue = Math.max(currentWeekTraffic, previousWeekTraffic)
-  const currentWeekWidth = (currentWeekTraffic / maxValue) * 100
-  const previousWeekWidth = (previousWeekTraffic / maxValue) * 100
+  const minBubbleSize = 60 // minimum bubble size in pixels
+  const maxBubbleSize = 120 // maximum bubble size in pixels
+  
+  const currentBubbleSize = minBubbleSize + ((currentWeekTraffic / maxValue) * (maxBubbleSize - minBubbleSize))
+  const previousBubbleSize = minBubbleSize + ((previousWeekTraffic / maxValue) * (maxBubbleSize - minBubbleSize))
 
   return (
     <Card className="bg-gray-900 border-gray-800 h-full flex flex-col">
@@ -63,12 +66,15 @@ const TrafficCard: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="pt-0 flex-1 flex flex-col">
-        <div className="flex-1 flex flex-col justify-center gap-6 px-4">
-          {/* Current Week Bar */}
-          <div className="relative h-12 bg-gray-800/50 rounded-lg overflow-hidden">
+        <div className="flex-1 flex items-center justify-center gap-8 px-4">
+          {/* Current Week Bubble */}
+          <div className="flex flex-col items-center">
             <div 
-              className="h-full bg-blue-600 rounded-lg flex items-center pl-4 transition-all duration-1000 ease-out"
-              style={{ width: `${currentWeekWidth}%` }}
+              className="bg-blue-600 rounded-full flex items-center justify-center transition-all duration-1000 ease-out shadow-lg"
+              style={{ 
+                width: `${currentBubbleSize}px`, 
+                height: `${currentBubbleSize}px` 
+              }}
             >
               {editingCurrent ? (
                 <input
@@ -77,14 +83,15 @@ const TrafficCard: React.FC = () => {
                   onChange={(e) => handleCurrentEdit(e.target.value)}
                   onBlur={() => setEditingCurrent(false)}
                   onKeyDown={(e) => handleKeyPress(e, editingCurrent, setEditingCurrent)}
-                  className="bg-transparent text-white font-bold text-lg outline-none border-none w-32"
+                  className="bg-transparent text-white font-bold text-center outline-none border-none w-20 text-sm"
                   autoFocus
                 />
               ) : (
                 <span 
-                  className="text-white font-bold text-lg cursor-pointer hover:bg-blue-700/50 px-2 py-1 rounded transition-colors"
+                  className="text-white font-bold text-center cursor-pointer hover:bg-blue-700/50 px-2 py-1 rounded transition-colors text-sm"
                   onClick={() => setEditingCurrent(true)}
                   title="Click to edit"
+                  style={{ fontSize: `${Math.max(10, currentBubbleSize / 8)}px` }}
                 >
                   {formatNumber(currentWeekTraffic)}
                 </span>
@@ -92,11 +99,14 @@ const TrafficCard: React.FC = () => {
             </div>
           </div>
 
-          {/* Previous Week Bar */}
-          <div className="relative h-12 bg-gray-800/50 rounded-lg overflow-hidden">
+          {/* Previous Week Bubble */}
+          <div className="flex flex-col items-center">
             <div 
-              className="h-full bg-purple-600 rounded-lg flex items-center pl-4 transition-all duration-1000 ease-out"
-              style={{ width: `${previousWeekWidth}%` }}
+              className="bg-purple-600 rounded-full flex items-center justify-center transition-all duration-1000 ease-out shadow-lg"
+              style={{ 
+                width: `${previousBubbleSize}px`, 
+                height: `${previousBubbleSize}px` 
+              }}
             >
               {editingPrevious ? (
                 <input
@@ -105,14 +115,15 @@ const TrafficCard: React.FC = () => {
                   onChange={(e) => handlePreviousEdit(e.target.value)}
                   onBlur={() => setEditingPrevious(false)}
                   onKeyDown={(e) => handleKeyPress(e, editingPrevious, setEditingPrevious)}
-                  className="bg-transparent text-white font-bold text-lg outline-none border-none w-32"
+                  className="bg-transparent text-white font-bold text-center outline-none border-none w-20 text-sm"
                   autoFocus
                 />
               ) : (
                 <span 
-                  className="text-white font-bold text-lg cursor-pointer hover:bg-purple-700/50 px-2 py-1 rounded transition-colors"
+                  className="text-white font-bold text-center cursor-pointer hover:bg-purple-700/50 px-2 py-1 rounded transition-colors text-sm"
                   onClick={() => setEditingPrevious(true)}
                   title="Click to edit"
+                  style={{ fontSize: `${Math.max(10, previousBubbleSize / 8)}px` }}
                 >
                   {formatNumber(previousWeekTraffic)}
                 </span>
