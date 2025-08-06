@@ -4,7 +4,7 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Heart, DollarSign, Globe, Trophy, TrendingUp } from 'lucide-react'
+import { Heart, DollarSign, Globe, Trophy, TrendingUp, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface LeaderboardItem {
@@ -47,29 +47,22 @@ const PopularityLeaderboard: React.FC = () => {
   }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
+    <Card className="w-full bg-gray-900 border-gray-800 h-full flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <TrendingUp className="w-6 h-6" />
-            Popularity Leaderboard
+          <CardTitle className="text-xl font-bold flex items-center gap-2 text-white">
+            <BarChart3 className="w-5 h-5" />
+            Popularity Ranking
           </CardTitle>
-          <Badge variant="outline" className="text-sm">
-            Top 5 Prop Firms
-          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-3">
+      <CardContent className="pt-0 flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col justify-evenly">
           {leaderboardData.map((item, index) => {
             const isCurrentFirm = item.rank === currentFirmRank
             
             return (
-              <div key={item.rank}>
-                {index > 0 && !isCurrentFirm && (
-                  <Separator className="mb-3" />
-                )}
-                
+              <div key={item.rank} className="flex-1 flex flex-col justify-center">
                 <div
                   className={cn(
                     "relative rounded-lg p-4 transition-all duration-300",
