@@ -1,12 +1,49 @@
 "use client"
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { BarChart3, TrendingUp } from 'lucide-react'
+import { BarChart3, TrendingDown, TrendingUp } from 'lucide-react'
 
 const FavoriteCard: React.FC = () => {
-  const changePercentage = 1.47
+  const [currentWeekFavorites, setCurrentWeekFavorites] = useState(16514)
+  const [previousWeekFavorites, setPreviousWeekFavorites] = useState(16269)
+  const [editingCurrent, setEditingCurrent] = useState(false)
+  const [editingPrevious, setEditingPrevious] = useState(false)
+  
+  // Calculate percentage change: ((current - previous) / previous) * 100
+  const changePercentage = ((currentWeekFavorites - previousWeekFavorites) / previousWeekFavorites) * 100
+  
+  const formatNumber = (amount: number): string => {
+    return new Intl.NumberFormat('en-US').format(amount)
+  }
+
+  const handleCurrentEdit = (value: string) => {
+    const numValue = parseInt(value.replace(/[^\d]/g, '')) || 0
+    setCurrentWeekFavorites(numValue)
+  }
+
+  const handlePreviousEdit = (value: string) => {
+    const numValue = parseInt(value.replace(/[^\d]/g, '')) || 0
+    setPreviousWeekFavorites(numValue)
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent, isEditing: boolean, setEditing: (value: boolean) => void) => {
+    if (e.key === 'Enter') {
+      setEditing(false)
+    }
+    if (e.key === 'Escape') {
+      setEditing(false)
+    }
+  }
+
+  // Calculate bubble sizes based on favorite values (relative to max value)
+  const maxValue = Math.max(currentWeekFavorites, previousWeekFavorites)
+  const minBubbleSize = 60 // minimum bubble size in pixels
+  const maxBubbleSize = 120 // maximum bubble size in pixels
+  
+  const currentBubbleSize = minBubbleSize + ((currentWeekFavorites / maxValue) * (maxBubbleSize - minBubbleSize))
+  const previousBubbleSize = minBubbleSize + ((previousWeekFavorites / maxValue) * (maxBubbleSize - minBubbleSize))
 
   return (
     <Card className="bg-gray-900 border-gray-800 h-full flex flex-col">
@@ -16,15 +53,83 @@ const FavoriteCard: React.FC = () => {
             <BarChart3 className="w-5 h-5" />
             <span className="text-sm font-medium">Favorite Change</span>
           </div>
-          <Badge className="flex items-center gap-1 bg-green-600 text-white">
-            <TrendingUp className="w-3 h-3" />
-            {changePercentage.toFixed(2)}%
+          <Badge className={`flex items-center gap-1 ${
+            changePercentage >= 0 ? 'bg-green-600' : 'bg-red-600'
+          } text-white`}>
+            {changePercentage >= 0 ? (
+              <TrendingUp className="w-3 h-3" />
+            ) : (
+              <TrendingDown className="w-3 h-3" />
+            )}
+            {Math.abs(changePercentage).toFixed(2)}%
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="pt-0 flex-1 flex flex-col">
-        <div className="flex-1 bg-gray-800/30 rounded-lg flex items-center justify-center">
-          <div className="text-gray-500 text-sm">Favorites Chart Placeholder</div>
+        <div className="flex-1 flex items-center justify-center gap-8 px-4">
+          {/* Current Week Bubble */}
+          <div className="flex flex-col items-center">
+            <div 
+              className="bg-blue-600 rounded-full flex items-center justify-center transition-all duration-1000 ease-out shadow-lg"
+              style={{ 
+                width: `${currentBubbleSize}px`, 
+                height: `${currentBubbleSize}px` 
+              }}
+            >
+              {editingCurrent ? (
+                <input
+                  type="text"
+                  value={formatNumber(currentWeekFavorites)}
+                  onChange={(e) => handleCurrentEdit(e.target.value)}
+                  onBlur={() => setEditingCurrent(false)}
+                  onKeyDown={(e) => handleKeyPress(e, editingCurrent, setEditingCurrent)}
+                  className="bg-transparent text-white font-bold text-center outline-none border-none w-20 text-sm"
+                  autoFocus
+                />
+              ) : (
+                <span 
+                  className="text-white font-bold text-center cursor-pointer hover:bg-blue-700/50 px-2 py-1 rounded transition-colors text-sm"
+                  onClick={() => setEditingCurrent(true)}
+                  title="Click to edit"
+                  style={{ fontSize: `${Math.max(10, currentBubbleSize / 8)}px` }}
+                >
+                  {formatNumber(currentWeekFavorites)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Previous Week Bubble */}
+          <div className="flex flex-col items-center">
+            <div 
+              className="bg-purple-600 rounded-full flex items-center justify-center transition-all duration-1000 ease-out shadow-lg"
+              style={{ 
+                width: `${previousBubbleSize}px`, 
+                height: `${previousBubbleSize}px` 
+              }}
+            >
+              {editingPrevious ? (
+                <input
+                  type="text"
+                  value={formatNumber(previousWeekFavorites)}
+                  onChange={(e) => handlePreviousEdit(e.target.value)}
+                  onBlur={() => setEditingPrevious(false)}
+                  onKeyDown={(e) => handleKeyPress(e, editingPrevious, setEditingPrevious)}
+                  className="bg-transparent text-white font-bold text-center outline-none border-none w-20 text-sm"
+                  autoFocus
+                />
+              ) : (
+                <span 
+                  className="text-white font-bold text-center cursor-pointer hover:bg-purple-700/50 px-2 py-1 rounded transition-colors text-sm"
+                  onClick={() => setEditingPrevious(true)}
+                  title="Click to edit"
+                  style={{ fontSize: `${Math.max(10, previousBubbleSize / 8)}px` }}
+                >
+                  {formatNumber(previousWeekFavorites)}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
