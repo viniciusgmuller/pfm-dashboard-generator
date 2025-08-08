@@ -160,6 +160,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange }) => {
             </div>
           </div>
         </div>
+
       </div>
 
       {/* Logo Selector Modal */}
