@@ -6,8 +6,18 @@ import FavoriteCard from '@/components/FavoriteCard'
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 flex flex-col items-center justify-center">
-      <div className="w-full max-w-[1560px] max-h-[850px] flex flex-col">
+    <main 
+      className="min-h-screen flex flex-col items-center justify-center"
+      style={{
+        backgroundImage: 'url("/bg.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        backgroundColor: '#100E0F'
+      }}
+    >
+      <div className="w-full max-w-[1560px] max-h-[800px] flex flex-col relative">
         <Header />
         
         <div className="p-6 flex-1">
@@ -17,7 +27,7 @@ export default function Home() {
             </div>
             
             <div className="lg:col-span-1 flex flex-col gap-6 h-full">
-              <div className="flex-1">
+              <div className="h-[100%]">
                 <RevenueCard />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
