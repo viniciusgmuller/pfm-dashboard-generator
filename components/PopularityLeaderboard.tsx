@@ -6,6 +6,7 @@
   import { Separator } from '@/components/ui/separator'
   import { Heart, DollarSign, Globe, Trophy, TrendingUp, BarChart3, Star } from 'lucide-react'
   import { cn } from '@/lib/utils'
+  import { CompanyLogo } from '@/components/logos'
 
   interface LeaderboardItem {
     rank: number
@@ -17,7 +18,15 @@
     reviews: number
   }
 
-  const PopularityLeaderboard: React.FC = () => {
+  interface PopularityLeaderboardProps {
+    currentLogoId?: string
+    currentFirmName?: string
+  }
+
+  const PopularityLeaderboard: React.FC<PopularityLeaderboardProps> = ({ 
+    currentLogoId: propLogoId, 
+    currentFirmName: propFirmName 
+  }) => {
     const initialData: LeaderboardItem[] = [
       { rank: 1, name: "???", favorites: 18230, revenue: 179300, traffic: 175280, rating: 4.8, reviews: 892 },
       { rank: 2, name: "???", favorites: 17856, revenue: 171000, traffic: 168950, rating: 4.6, reviews: 734 },
@@ -31,7 +40,8 @@
     const [editingField, setEditingField] = useState<'favorites' | 'revenue' | 'traffic' | 'rating' | 'reviews' | null>(null)
     const [tempValue, setTempValue] = useState<string>('')
 
-    const currentFirmName = "FundingPips"
+    const currentFirmName = propFirmName || "Funding Pips"
+    const currentFirmLogo = propLogoId || "fundingpips" // ID do logo correspondente
     const maxFavorites = Math.max(...leaderboardData.map(item => item.favorites))
     const totalPFMVisits = 258351
 
@@ -206,7 +216,7 @@
         <CardContent className="pt-0 px-0 pb-0 flex-1 flex flex-col relative z-10">
         <div className="flex-1 flex flex-col justify-between">
             {leaderboardData.map((item) => {
-              const isCurrentFirm = item.name === currentFirmName
+              const isCurrentFirm = item.name === "FundingPips" // Sempre usar o nome fixo da lista
               const isEditingFavorites = editingId === item.rank && editingField === 'favorites'
               const isEditingRevenue = editingId === item.rank && editingField === 'revenue'
               const isEditingVisits = editingId === item.rank && editingField === 'traffic'
@@ -405,19 +415,26 @@
                           {getRankIcon(item.rank)}
                         </div>
                         
-                        <div className="flex flex-col">
-                          <span className={cn(
-                            "text-lg font-semibold",
-                            isCurrentFirm ? "text-blue-400" : "text-gray-400"
-                          )}>
-                            {item.name}
-                          </span>
-                          {isCurrentFirm && (
-                            <Badge variant="outline" className="w-fit mt-1 text-xs border-blue-500 text-blue-600">
-                              Your Firm
-                            </Badge>
-                          )}
-                        </div>
+                        {isCurrentFirm ? (
+                          <div className="flex items-center gap-3">
+                            <CompanyLogo 
+                              logoId={currentFirmLogo} 
+                              size={32}
+                              fallbackText="FP"
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-lg font-semibold text-blue-400">
+                                {currentFirmName}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="text-lg font-semibold text-gray-400">
+                              {item.name}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       
                     </div>

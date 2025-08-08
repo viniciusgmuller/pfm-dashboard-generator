@@ -5,7 +5,12 @@ import { Badge } from '@/components/ui/badge'
 import { CompanyLogo, LogoSelector } from '@/components/logos'
 import { getLogoById } from '@/data/logoData'
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onLogoChange?: (logoId: string) => void
+  onFirmNameChange?: (firmName: string) => void
+}
+
+const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange }) => {
   const [firmName, setFirmName] = useState('Funding Pips')
   const [currentWeek, setCurrentWeek] = useState('Jun 28 - Aug 3')
   const [pfmVisitors, setPfmVisitors] = useState(258351)
@@ -21,6 +26,7 @@ const Header: React.FC = () => {
 
   const handleFirmNameEdit = (value: string) => {
     setFirmName(value)
+    onFirmNameChange?.(value)
   }
 
   const handleCurrentWeekEdit = (value: string) => {
@@ -46,7 +52,9 @@ const Header: React.FC = () => {
     const logoData = getLogoById(logoId)
     if (logoData) {
       setFirmName(logoData.name)
+      onFirmNameChange?.(logoData.name)
     }
+    onLogoChange?.(logoId)
   }
   return (
     <div 
