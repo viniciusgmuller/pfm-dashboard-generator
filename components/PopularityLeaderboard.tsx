@@ -356,7 +356,6 @@
               const isEditingRevenue = editingId === item.rank && editingField === 'revenue'
               const isEditingVisits = editingId === item.rank && editingField === 'traffic'
               const isEditingRating = editingId === item.rank && editingField === 'rating'
-              const isEditingReviews = editingId === item.rank && editingField === 'reviews'
               const isEditingRank = editingId === item.rank && editingField === 'rank'
               
               return (
@@ -425,26 +424,6 @@
                             {renderStars(item.rating, isCurrentFirm)}
                           </div>
                           
-                          <span className={cn(
-                            "font-medium cursor-pointer hover:bg-gray-700/50 px-1 py-0.5 rounded transition-colors",
-                            isCurrentFirm ? "text-xs text-gray-300" : "text-[10px] text-gray-400"
-                          )}>
-                            {isEditingReviews ? (
-                              <input
-                                type="text"
-                                value={tempValue}
-                                onChange={(e) => setTempValue(e.target.value)}
-                                onKeyDown={(e) => handleKeyDown(e, item.rank)}
-                                onBlur={() => handleEditSave(item.rank)}
-                                className={cn("bg-gray-800 text-white px-2 py-1 rounded w-12 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 text-center", isCurrentFirm ? "text-xs" : "text-[10px]")}
-                                autoFocus
-                              />
-                            ) : (
-                              <span onClick={() => handleEditStart(item.rank, 'reviews', item.reviews)}>
-                                {item.reviews}
-                              </span>
-                            )}
-                          </span>
                         </div>
                         
                         <div className="flex flex-col items-center gap-0 group pointer-events-auto">
