@@ -37,7 +37,7 @@
 
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardItem[]>(initialData)
     const [editingId, setEditingId] = useState<number | null>(null)
-    const [editingField, setEditingField] = useState<'favorites' | 'revenue' | 'traffic' | 'rating' | 'reviews' | null>(null)
+    const [editingField, setEditingField] = useState<'favorites' | 'revenue' | 'traffic' | 'rating' | 'reviews' | 'rank' | null>(null)
     const [tempValue, setTempValue] = useState<string>('')
 
     const currentFirmName = propFirmName || "Funding Pips"
@@ -125,8 +125,16 @@
       return "secondary"
     }
 
-    const getBarWidth = (favorites: number): number => {
-      return (favorites / maxFavorites) * 100
+    const getBarWidth = (rank: number): number => {
+      // Baseado na posição: 1º = 100%, 2º = 90%, 3º = 80%, 4º = 75%, 5º = 75%
+      switch(rank) {
+        case 1: return 100
+        case 2: return 90
+        case 3: return 80
+        case 4: return 75
+        case 5: return 75
+        default: return 75
+      }
     }
 
     const reorderByFavorites = useCallback((data: LeaderboardItem[]): LeaderboardItem[] => {
@@ -134,7 +142,31 @@
       return sorted.map((item, index) => ({ ...item, rank: index + 1 }))
     }, [])
 
-    const handleEditStart = (rank: number, field: 'favorites' | 'revenue' | 'traffic' | 'rating' | 'reviews', currentValue: number) => {
+    const reorderByRank = useCallback((data: LeaderboardItem[], currentRank: number, newRank: number): LeaderboardItem[] => {
+      // Encontrar o item que está sendo movido
+      const itemToMove = data.find(item => item.rank === currentRank)
+      if (!itemToMove) return data
+      
+      // Criar array sem o item que está sendo movido
+      const otherItems = data.filter(item => item.rank !== currentRank)
+      
+      // Inserir o item na nova posição e renumerar tudo
+      const result: LeaderboardItem[] = []
+      for (let i = 1; i <= 5; i++) {
+        if (i === newRank) {
+          result.push({ ...itemToMove, rank: i })
+        } else {
+          const nextItem = otherItems.shift()
+          if (nextItem) {
+            result.push({ ...nextItem, rank: i })
+          }
+        }
+      }
+      
+      return result
+    }, [])
+
+    const handleEditStart = (rank: number, field: 'favorites' | 'revenue' | 'traffic' | 'rating' | 'reviews' | 'rank', currentValue: number) => {
       setEditingId(rank)
       setEditingField(field)
       setTempValue(currentValue.toString())
@@ -147,12 +179,19 @@
         ? parseFloat(tempValue.replace(/[^\d.]/g, '')) || 0
         : parseInt(tempValue.replace(/[^\d]/g, '')) || 0
       
-      const updatedData = leaderboardData.map(item => 
-        item.rank === rank ? { ...item, [editingField]: newValue } : item
-      )
-      // Só reordena se editou favorites
-      const finalData = editingField === 'favorites' ? reorderByFavorites(updatedData) : updatedData
-      setLeaderboardData(finalData)
+      if (editingField === 'rank') {
+        // Lógica especial para edição de rank
+        const reorderedData = reorderByRank(leaderboardData, rank, newValue)
+        setLeaderboardData(reorderedData)
+      } else {
+        const updatedData = leaderboardData.map(item => 
+          item.rank === rank ? { ...item, [editingField]: newValue } : item
+        )
+        // Só reordena se editou favorites
+        const finalData = editingField === 'favorites' ? reorderByFavorites(updatedData) : updatedData
+        setLeaderboardData(finalData)
+      }
+      
       setEditingId(null)
       setEditingField(null)
       setTempValue('')
@@ -220,6 +259,7 @@
               const isEditingVisits = editingId === item.rank && editingField === 'traffic'
               const isEditingRating = editingId === item.rank && editingField === 'rating'
               const isEditingReviews = editingId === item.rank && editingField === 'reviews'
+              const isEditingRank = editingId === item.rank && editingField === 'rank'
               
               return (
                 <div key={item.rank} className="flex flex-col justify-center">
@@ -244,16 +284,16 @@
                     {/* Progress bar */}
                     <div 
                       className={cn(
-                        "absolute inset-y-0 left-0 rounded-lg transition-all duration-1000 ease-out flex items-center justify-end pr-4 z-10",
+                        "absolute inset-y-0 left-0 rounded-lg transition-all duration-1000 ease-out flex items-center justify-end pr-4 z-10 pointer-events-none",
                         !isCurrentFirm && "bg-gradient-to-r from-gray-600/30 to-gray-500/20"
                       )}
                       style={{ 
-                        width: `${getBarWidth(item.favorites)}%`,
+                        width: `${getBarWidth(item.rank)}%`,
                         backgroundColor: isCurrentFirm ? '#1E2244' : undefined
                       }}
                     >
-                      <div className={cn("flex items-center gap-3 relative z-30", isCurrentFirm ? "text-sm" : "text-xs")}>
-                        <div className="flex flex-col items-center gap-1 group">
+                      <div className={cn("flex items-center gap-3 relative z-40 pointer-events-auto", isCurrentFirm ? "text-sm" : "text-xs")}>
+                        <div className="flex flex-col items-center gap-1 group pointer-events-auto">
                           {isEditingRating ? (
                             <input
                               type="text"
@@ -309,7 +349,7 @@
                           </span>
                         </div>
                         
-                        <div className="flex flex-col items-center gap-0 group">
+                        <div className="flex flex-col items-center gap-0 group pointer-events-auto">
                           <DollarSign className={cn(
                             "w-4 h-4 transition-colors",
                             isCurrentFirm ? "text-green-500" : "text-gray-400"
@@ -338,7 +378,7 @@
                           )}
                         </div>
                         
-                        <div className="flex flex-col items-center gap-0 group">
+                        <div className="flex flex-col items-center gap-0 group pointer-events-auto">
                           <Globe className={cn(
                             "w-4 h-4 transition-colors",
                             isCurrentFirm ? "text-blue-400" : "text-gray-400"
@@ -367,7 +407,7 @@
                           )}
                         </div>
                         
-                        <div className="flex flex-col items-center gap-0 group">
+                        <div className="flex flex-col items-center gap-0 group pointer-events-auto">
                           <Heart className={cn(
                             "w-4 h-4 transition-colors",
                             isCurrentFirm ? "text-red-500 fill-red-500" : "text-gray-400"
@@ -398,18 +438,32 @@
                       </div>
                     </div>
                     
-                    <div className="relative z-20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pointer-events-none">
+                    <div className="relative z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pointer-events-none">
                       <div className="flex items-center gap-3 pointer-events-auto">
                         <div className="flex items-center gap-2">
-                          <Badge 
-                            variant={getRankBadgeVariant(item.rank)}
-                            className={cn(
-                              "text-lg font-bold px-3 py-1",
-                              isCurrentFirm && "bg-blue-500 text-white hover:bg-blue-600"
-                            )}
-                          >
-                            #{item.rank}
-                          </Badge>
+                          {isEditingRank ? (
+                            <input
+                              type="text"
+                              value={tempValue}
+                              onChange={(e) => setTempValue(e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, item.rank)}
+                              onBlur={() => handleEditSave(item.rank)}
+                              className="bg-gray-800 text-white px-3 py-1 rounded text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 text-center w-16 border border-blue-500"
+                              autoFocus
+                            />
+                          ) : (
+                            <Badge 
+                              variant={getRankBadgeVariant(item.rank)}
+                              className={cn(
+                                "text-lg font-bold px-3 py-1 cursor-pointer hover:opacity-80 transition-opacity",
+                                isCurrentFirm && "bg-blue-500 text-white hover:bg-blue-600"
+                              )}
+                              onClick={() => handleEditStart(item.rank, 'rank', item.rank)}
+                              title="Click to edit position"
+                            >
+                              #{item.rank}
+                            </Badge>
+                          )}
                           {getRankIcon(item.rank)}
                         </div>
                         
