@@ -21,19 +21,73 @@
   interface PopularityLeaderboardProps {
     currentLogoId?: string
     currentFirmName?: string
+    currentFirmTraffic?: number
   }
 
   const PopularityLeaderboard: React.FC<PopularityLeaderboardProps> = ({ 
     currentLogoId: propLogoId, 
-    currentFirmName: propFirmName 
+    currentFirmName: propFirmName,
+    currentFirmTraffic
   }) => {
-    const initialData: LeaderboardItem[] = [
-      { rank: 1, name: "???", favorites: 18230, revenue: 179300, traffic: 67.8, rating: 4.8, reviews: 892 },
-      { rank: 2, name: "???", favorites: 17856, revenue: 171000, traffic: 65.4, rating: 4.6, reviews: 734 },
-      { rank: 3, name: "???", favorites: 17450, revenue: 162200, traffic: 61.9, rating: 4.5, reviews: 621 },
-      { rank: 4, name: "FundingPips", favorites: 16256, revenue: 151280, traffic: 58.6, rating: 4.4, reviews: 603 },
-      { rank: 5, name: "???", favorites: 15987, revenue: 140000, traffic: 55.0, rating: 4.2, reviews: 548 }
-    ]
+    // Posição inicial da Funding Pips
+    const [fundingPipsRank, setFundingPipsRank] = useState(4)
+    
+    // Gerar dados baseados na posição da Funding Pips
+    const generateLeaderboardData = (currentFPRank: number): LeaderboardItem[] => {
+      const data: LeaderboardItem[] = []
+      
+      // Para posições 1-5, mostrar as primeiras 5 posições normalmente
+      // Para posições 6+, mostrar 4 acima e 1 abaixo
+      let startRank: number
+      let endRank: number
+      
+      if (currentFPRank <= 5) {
+        // Se está nas primeiras 5 posições, mostrar posições 1-5
+        startRank = 1
+        endRank = 5
+      } else {
+        // Se está na posição 6 ou maior, mostrar 4 acima e 1 abaixo
+        startRank = currentFPRank - 4
+        endRank = currentFPRank + 1
+      }
+      
+      // Dados mockados para outras empresas (você pode ajustar estes valores)
+      const mockData = [
+        { favorites: 18230, revenue: 179300, traffic: 67.8, rating: 4.8, reviews: 892 },
+        { favorites: 17856, revenue: 171000, traffic: 65.4, rating: 4.6, reviews: 734 },
+        { favorites: 17450, revenue: 162200, traffic: 61.9, rating: 4.5, reviews: 621 },
+        { favorites: 16800, revenue: 155000, traffic: 60.0, rating: 4.3, reviews: 650 },
+        { favorites: 15987, revenue: 140000, traffic: 55.0, rating: 4.2, reviews: 548 },
+        { favorites: 15500, revenue: 135000, traffic: 52.0, rating: 4.1, reviews: 520 },
+      ]
+      
+      for (let i = startRank; i <= endRank; i++) {
+        if (i === currentFPRank) {
+          // Funding Pips sempre na posição especificada
+          data.push({
+            rank: i,
+            name: "FundingPips",
+            favorites: 16256,
+            revenue: 151280,
+            traffic: currentFirmTraffic || 58.6,
+            rating: 4.4,
+            reviews: 603
+          })
+        } else {
+          // Outras empresas com dados mockados
+          const mockIndex = (i - 1) % mockData.length
+          data.push({
+            rank: i,
+            name: "???",
+            ...mockData[mockIndex]
+          })
+        }
+      }
+      
+      return data
+    }
+    
+    const initialData = generateLeaderboardData(fundingPipsRank)
 
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardItem[]>(initialData)
     const [editingId, setEditingId] = useState<number | null>(null)
@@ -126,14 +180,36 @@
     }
 
     const getBarWidth = (rank: number): number => {
-      // Baseado na posição: 1º = 100%, 2º = 90%, 3º = 80%, 4º = 75%, 5º = 75%
-      switch(rank) {
-        case 1: return 100
-        case 2: return 90
-        case 3: return 80
-        case 4: return 75
-        case 5: return 75
-        default: return 75
+      // Encontrar a menor e maior posição visível
+      const ranks = leaderboardData.map(item => item.rank).sort((a, b) => a - b)
+      const minRank = ranks[0]
+      const totalBars = ranks.length
+      
+      // Calcular a posição relativa (0 = primeira visível)
+      const relativePosition = rank - minRank
+      
+      // Se temos 5 barras (posições 1-5)
+      if (totalBars === 5) {
+        switch(relativePosition) {
+          case 0: return 100  // 1ª posição
+          case 1: return 95   // 2ª posição
+          case 2: return 90   // 3ª posição
+          case 3: return 85   // 4ª posição
+          case 4: return 80   // 5ª posição
+          default: return 80
+        }
+      } 
+      // Se temos 6 barras (posições 6+)
+      else {
+        switch(relativePosition) {
+          case 0: return 100  // Primeira barra visível
+          case 1: return 95   // Segunda barra visível
+          case 2: return 90   // Terceira barra visível
+          case 3: return 85   // Quarta barra visível
+          case 4: return 80   // Quinta barra visível
+          case 5: return 75   // Sexta barra visível
+          default: return 75
+        }
       }
     }
 
@@ -143,16 +219,14 @@
     }, [])
 
     const reorderByRank = useCallback((data: LeaderboardItem[], currentRank: number, newRank: number): LeaderboardItem[] => {
-      // Encontrar o item que está sendo movido
+      // Para barras que não são Funding Pips, apenas reordenar
       const itemToMove = data.find(item => item.rank === currentRank)
       if (!itemToMove) return data
       
-      // Criar array sem o item que está sendo movido
       const otherItems = data.filter(item => item.rank !== currentRank)
-      
-      // Inserir o item na nova posição e renumerar tudo
       const result: LeaderboardItem[] = []
-      for (let i = 1; i <= 5; i++) {
+      
+      for (let i = 1; i <= data.length; i++) {
         if (i === newRank) {
           result.push({ ...itemToMove, rank: i })
         } else {
@@ -180,9 +254,33 @@
         : parseInt(tempValue.replace(/[^\d]/g, '')) || 0
       
       if (editingField === 'rank') {
-        // Lógica especial para edição de rank
-        const reorderedData = reorderByRank(leaderboardData, rank, newValue)
-        setLeaderboardData(reorderedData)
+        // Verificar se é a Funding Pips sendo editada
+        const fundingPipsItem = leaderboardData.find(item => item.name === 'FundingPips')
+        
+        if (fundingPipsItem && fundingPipsItem.rank === rank) {
+          // Se é a Funding Pips, regenerar toda a lista com a nova posição
+          setFundingPipsRank(newValue)
+          const newData = generateLeaderboardData(newValue)
+          // Preservar dados editados da Funding Pips
+          const updatedData = newData.map(item => {
+            if (item.name === 'FundingPips') {
+              return {
+                ...item,
+                favorites: fundingPipsItem.favorites,
+                revenue: fundingPipsItem.revenue,
+                traffic: fundingPipsItem.traffic,
+                rating: fundingPipsItem.rating,
+                reviews: fundingPipsItem.reviews
+              }
+            }
+            return item
+          })
+          setLeaderboardData(updatedData)
+        } else {
+          // Se não é a Funding Pips, usar lógica antiga
+          const reorderedData = reorderByRank(leaderboardData, rank, newValue)
+          setLeaderboardData(reorderedData)
+        }
       } else {
         const updatedData = leaderboardData.map(item => 
           item.rank === rank ? { ...item, [editingField]: newValue } : item
