@@ -100,6 +100,18 @@ const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange }) => {
       </div>
 
       <div className="flex items-center gap-6">
+        {/* Legend */}
+        <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-gray-600 rounded"></div>
+            <span className="text-gray-400">Previous Week</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-600 rounded"></div>
+            <span className="text-gray-400">Current Week</span>
+          </div>
+        </div>
+        
         <div className="text-left">
           <div className="text-xs text-white mb-0.25">Current Week:</div>
           <div className="text-lg font-bold text-white">

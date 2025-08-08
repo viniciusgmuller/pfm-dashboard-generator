@@ -53,7 +53,7 @@
     }
 
     const formatVisitsPercentage = (visits: number): string => {
-      return `${visits.toFixed(1)}%`
+      return `${visits.toFixed(2)}%`
     }
 
     const renderStars = (rating: number, isCurrentFirm: boolean) => {
