@@ -8,10 +8,11 @@ import { BarChart3, TrendingDown, TrendingUp } from 'lucide-react'
 const TrafficCard: React.FC = () => {
   const [currentWeekTraffic, setCurrentWeekTraffic] = useState(151280)
   const [previousWeekTraffic, setPreviousWeekTraffic] = useState(165650)
-  const [cfdShare, setCfdShare] = useState(10) // Percentage of CFD Firm-Page Visits
+  const [cfdShare, setCfdShare] = useState(10.0) // Percentage of CFD Firm-Page Visits
   const [editingCurrent, setEditingCurrent] = useState(false)
   const [editingPrevious, setEditingPrevious] = useState(false)
   const [editingCfdShare, setEditingCfdShare] = useState(false)
+  const [tempCfdValue, setTempCfdValue] = useState("10.0")
   
   // Calculate percentage change: ((current - previous) / previous) * 100
   const changePercentage = ((currentWeekTraffic - previousWeekTraffic) / previousWeekTraffic) * 100
@@ -31,7 +32,7 @@ const TrafficCard: React.FC = () => {
   }
 
   const handleCfdShareEdit = (value: string) => {
-    const numValue = parseInt(value.replace(/[^\d]/g, '')) || 0
+    const numValue = parseFloat(value.replace(/[^\d.]/g, '')) || 0
     setCfdShare(Math.min(100, Math.max(0, numValue))) // Ensure between 0-100
   }
 
@@ -166,15 +167,27 @@ const TrafficCard: React.FC = () => {
                       />
                       
                       {/* Pie slice for the percentage */}
-                      <path
-                        d={`M 50,50 L 50,5 A 45,45 0 ${cfdShare > 50 ? 1 : 0},1 ${
-                          50 + 45 * Math.sin((cfdShare / 100) * 2 * Math.PI)
-                        },${
-                          50 - 45 * Math.cos((cfdShare / 100) * 2 * Math.PI)
-                        } Z`}
-                        fill="#6366f1"
-                        className="transition-all duration-1000 ease-out"
-                      />
+                      {cfdShare >= 99.9 ? (
+                        // Full circle when 100%
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="#6366f1"
+                          className="transition-all duration-1000 ease-out"
+                        />
+                      ) : cfdShare > 0 ? (
+                        // Pie slice for partial percentages
+                        <path
+                          d={`M 50,50 L 50,5 A 45,45 0 ${cfdShare > 50 ? 1 : 0},1 ${
+                            50 + 45 * Math.sin((cfdShare / 100) * 2 * Math.PI)
+                          },${
+                            50 - 45 * Math.cos((cfdShare / 100) * 2 * Math.PI)
+                          } Z`}
+                          fill="#6366f1"
+                          className="transition-all duration-1000 ease-out"
+                        />
+                      ) : null}
                       
                       {/* Border circle */}
                       <circle
@@ -193,20 +206,39 @@ const TrafficCard: React.FC = () => {
                     {editingCfdShare ? (
                       <input
                         type="text"
-                        value={cfdShare}
-                        onChange={(e) => handleCfdShareEdit(e.target.value)}
-                        onBlur={() => setEditingCfdShare(false)}
-                        onKeyDown={(e) => handleKeyPress(e, editingCfdShare, setEditingCfdShare)}
-                        className="bg-gray-800 text-white text-xl font-bold outline-none border-none w-14 text-center"
+                        value={tempCfdValue}
+                        onChange={(e) => {
+                          setTempCfdValue(e.target.value)
+                        }}
+                        onBlur={() => {
+                          const numValue = parseFloat(tempCfdValue) || 0
+                          setCfdShare(Math.min(100, Math.max(0, numValue)))
+                          setEditingCfdShare(false)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const numValue = parseFloat(tempCfdValue) || 0
+                            setCfdShare(Math.min(100, Math.max(0, numValue)))
+                            setEditingCfdShare(false)
+                          }
+                          if (e.key === 'Escape') {
+                            setTempCfdValue(cfdShare.toString())
+                            setEditingCfdShare(false)
+                          }
+                        }}
+                        className="bg-gray-800 text-white text-xl font-bold outline-none border-none w-20 text-center"
                         autoFocus
                       />
                     ) : (
                       <span 
                         className="text-white text-xl font-bold cursor-pointer hover:bg-gray-700/50 px-2 py-1 rounded transition-colors"
-                        onClick={() => setEditingCfdShare(true)}
+                        onClick={() => {
+                          setTempCfdValue(cfdShare.toString())
+                          setEditingCfdShare(true)
+                        }}
                         title="Click to edit"
                       >
-                        {cfdShare}%
+                        {cfdShare.toFixed(1)}%
                       </span>
                     )}
                   </div>
