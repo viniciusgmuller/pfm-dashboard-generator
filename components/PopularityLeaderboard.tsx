@@ -13,7 +13,7 @@
     name: string
     favorites: number
     revenue: number
-    traffic: number
+    traffic: number // Agora representa um percentual direto (ex: 58.6 para 58.6%)
     rating: number
     reviews: number
   }
@@ -28,11 +28,11 @@
     currentFirmName: propFirmName 
   }) => {
     const initialData: LeaderboardItem[] = [
-      { rank: 1, name: "???", favorites: 18230, revenue: 179300, traffic: 175280, rating: 4.8, reviews: 892 },
-      { rank: 2, name: "???", favorites: 17856, revenue: 171000, traffic: 168950, rating: 4.6, reviews: 734 },
-      { rank: 3, name: "???", favorites: 17450, revenue: 162200, traffic: 159870, rating: 4.5, reviews: 621 },
-      { rank: 4, name: "FundingPips", favorites: 16256, revenue: 151280, traffic: 151280, rating: 4.4, reviews: 603 },
-      { rank: 5, name: "???", favorites: 15987, revenue: 140000, traffic: 142000, rating: 4.2, reviews: 548 }
+      { rank: 1, name: "???", favorites: 18230, revenue: 179300, traffic: 67.8, rating: 4.8, reviews: 892 },
+      { rank: 2, name: "???", favorites: 17856, revenue: 171000, traffic: 65.4, rating: 4.6, reviews: 734 },
+      { rank: 3, name: "???", favorites: 17450, revenue: 162200, traffic: 61.9, rating: 4.5, reviews: 621 },
+      { rank: 4, name: "FundingPips", favorites: 16256, revenue: 151280, traffic: 58.6, rating: 4.4, reviews: 603 },
+      { rank: 5, name: "???", favorites: 15987, revenue: 140000, traffic: 55.0, rating: 4.2, reviews: 548 }
     ]
 
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardItem[]>(initialData)
@@ -43,7 +43,6 @@
     const currentFirmName = propFirmName || "Funding Pips"
     const currentFirmLogo = propLogoId || "fundingpips" // ID do logo correspondente
     const maxFavorites = Math.max(...leaderboardData.map(item => item.favorites))
-    const totalPFMVisits = 258351
 
     const formatNumber = (num: number): string => {
       return new Intl.NumberFormat('en-US').format(num)
@@ -54,8 +53,7 @@
     }
 
     const formatVisitsPercentage = (visits: number): string => {
-      const percentage = (visits / totalPFMVisits) * 100
-      return `${percentage.toFixed(1)}%`
+      return `${visits.toFixed(1)}%`
     }
 
     const renderStars = (rating: number, isCurrentFirm: boolean) => {
@@ -145,7 +143,7 @@
     const handleEditSave = (rank: number) => {
       if (!editingField) return
       
-      const newValue = editingField === 'rating' 
+      const newValue = (editingField === 'rating' || editingField === 'traffic') 
         ? parseFloat(tempValue.replace(/[^\d.]/g, '')) || 0
         : parseInt(tempValue.replace(/[^\d]/g, '')) || 0
       
