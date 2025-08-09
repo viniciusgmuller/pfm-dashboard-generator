@@ -5,14 +5,26 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DollarSign, TrendingDown, TrendingUp } from 'lucide-react'
 
-const RevenueCard: React.FC = () => {
-  const [currentWeekRevenue, setCurrentWeekRevenue] = useState(151280)
-  const [previousWeekRevenue, setPreviousWeekRevenue] = useState(165650)
+interface RevenueCardProps {
+  previousWeek?: number
+  currentWeek?: number
+  isStatic?: boolean
+}
+
+const RevenueCard: React.FC<RevenueCardProps> = ({ 
+  previousWeek, 
+  currentWeek, 
+  isStatic = false 
+}) => {
+  const [currentWeekRevenue, setCurrentWeekRevenue] = useState(currentWeek ?? 151280)
+  const [previousWeekRevenue, setPreviousWeekRevenue] = useState(previousWeek ?? 165650)
   const [editingCurrent, setEditingCurrent] = useState(false)
   const [editingPrevious, setEditingPrevious] = useState(false)
   
   // Calculate percentage change: ((current - previous) / previous) * 100
-  const changePercentage = ((currentWeekRevenue - previousWeekRevenue) / previousWeekRevenue) * 100
+  const changePercentage = previousWeekRevenue === 0 
+    ? (currentWeekRevenue > 0 ? 100 : 0) 
+    : ((currentWeekRevenue - previousWeekRevenue) / previousWeekRevenue) * 100
   
   const formatCurrency = (amount: number): string => {
     return `$${new Intl.NumberFormat('en-US').format(amount)}`
@@ -38,7 +50,7 @@ const RevenueCard: React.FC = () => {
   }
 
   // Calculate percentage widths for bars (relative to the highest value)
-  const maxValue = Math.max(currentWeekRevenue, previousWeekRevenue)
+  const maxValue = Math.max(currentWeekRevenue, previousWeekRevenue, 1) // Avoid division by zero
   const currentWeekWidth = (currentWeekRevenue / maxValue) * 100
   const previousWeekWidth = (previousWeekRevenue / maxValue) * 100
 
@@ -78,7 +90,7 @@ const RevenueCard: React.FC = () => {
               className="h-full bg-blue-600 rounded-lg flex items-center pl-4 transition-all duration-1000 ease-out"
               style={{ width: `${currentWeekWidth}%` }}
             >
-              {editingCurrent ? (
+              {editingCurrent && !isStatic ? (
                 <input
                   type="text"
                   value={formatCurrency(currentWeekRevenue)}
@@ -90,9 +102,12 @@ const RevenueCard: React.FC = () => {
                 />
               ) : (
                 <span 
-                  className="text-white font-bold text-lg cursor-pointer hover:bg-blue-700/50 px-2 py-1 rounded transition-colors"
-                  onClick={() => setEditingCurrent(true)}
-                  title="Click to edit"
+                  className={isStatic 
+                    ? "text-white font-bold text-lg px-2 py-1"
+                    : "text-white font-bold text-lg cursor-pointer hover:bg-blue-700/50 px-2 py-1 rounded transition-colors"
+                  }
+                  onClick={isStatic ? undefined : () => setEditingCurrent(true)}
+                  title={isStatic ? undefined : "Click to edit"}
                 >
                   {formatCurrency(currentWeekRevenue)}
                 </span>
@@ -106,7 +121,7 @@ const RevenueCard: React.FC = () => {
               className="h-full bg-gray-600 rounded-lg flex items-center pl-4 transition-all duration-1000 ease-out"
               style={{ width: `${previousWeekWidth}%` }}
             >
-              {editingPrevious ? (
+              {editingPrevious && !isStatic ? (
                 <input
                   type="text"
                   value={formatCurrency(previousWeekRevenue)}
@@ -118,9 +133,12 @@ const RevenueCard: React.FC = () => {
                 />
               ) : (
                 <span 
-                  className="text-white font-bold text-lg cursor-pointer hover:bg-gray-700/50 px-2 py-1 rounded transition-colors"
-                  onClick={() => setEditingPrevious(true)}
-                  title="Click to edit"
+                  className={isStatic 
+                    ? "text-white font-bold text-lg px-2 py-1"
+                    : "text-white font-bold text-lg cursor-pointer hover:bg-gray-700/50 px-2 py-1 rounded transition-colors"
+                  }
+                  onClick={isStatic ? undefined : () => setEditingPrevious(true)}
+                  title={isStatic ? undefined : "Click to edit"}
                 >
                   {formatCurrency(previousWeekRevenue)}
                 </span>
