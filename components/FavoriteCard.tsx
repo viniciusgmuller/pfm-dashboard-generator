@@ -5,9 +5,23 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BarChart3, TrendingDown, TrendingUp, ArrowDown, ArrowUp, Trophy, Award } from 'lucide-react'
 
-const FavoriteCard: React.FC = () => {
-  const [currentWeekFavorites, setCurrentWeekFavorites] = useState(16514)
-  const [previousWeekFavorites, setPreviousWeekFavorites] = useState(16269)
+interface FavoriteCardProps {
+  previousWeek?: number
+  currentWeek?: number
+  favoritesAdded?: number
+  favoritesChange?: number
+  isStatic?: boolean
+}
+
+const FavoriteCard: React.FC<FavoriteCardProps> = ({ 
+  previousWeek, 
+  currentWeek, 
+  favoritesAdded,
+  favoritesChange,
+  isStatic = false 
+}) => {
+  const [currentWeekFavorites, setCurrentWeekFavorites] = useState(currentWeek ?? 16514)
+  const [previousWeekFavorites, setPreviousWeekFavorites] = useState(previousWeek ?? 16269)
   const [currentRanking, setCurrentRanking] = useState(1)
   const [previousRanking, setPreviousRanking] = useState(3)
   const [editingCurrent, setEditingCurrent] = useState(false)
@@ -17,8 +31,12 @@ const FavoriteCard: React.FC = () => {
   const [tempCurrentRanking, setTempCurrentRanking] = useState('')
   const [tempPreviousRanking, setTempPreviousRanking] = useState('')
   
-  // Calculate percentage change: ((current - previous) / previous) * 100
-  const changePercentage = ((currentWeekFavorites - previousWeekFavorites) / previousWeekFavorites) * 100
+  // Use real percentage from CSV (Column J) or calculate if not provided
+  const changePercentage = favoritesChange ?? (
+    previousWeekFavorites === 0 
+      ? (currentWeekFavorites > 0 ? 100 : 0) 
+      : ((currentWeekFavorites - previousWeekFavorites) / previousWeekFavorites) * 100
+  )
   
   const formatNumber = (amount: number): string => {
     return new Intl.NumberFormat('en-US').format(amount)
@@ -86,7 +104,7 @@ const FavoriteCard: React.FC = () => {
   }
 
   // Calculate bubble sizes based on favorite values (relative to max value)
-  const maxValue = Math.max(currentWeekFavorites, previousWeekFavorites)
+  const maxValue = Math.max(currentWeekFavorites, previousWeekFavorites, 1) // Avoid division by zero
   const minBubbleSize = 80 // minimum bubble size in pixels
   const maxBubbleSize = 140 // maximum bubble size in pixels
   
@@ -133,7 +151,7 @@ const FavoriteCard: React.FC = () => {
                 height: `${previousBubbleSize}px` 
               }}
             >
-              {editingPrevious ? (
+              {editingPrevious && !isStatic ? (
                 <input
                   type="text"
                   value={formatNumber(previousWeekFavorites)}
@@ -145,9 +163,12 @@ const FavoriteCard: React.FC = () => {
                 />
               ) : (
                 <span 
-                  className="text-white font-bold text-center cursor-pointer hover:bg-gray-700/50 px-2 py-1 rounded transition-colors text-sm"
-                  onClick={() => setEditingPrevious(true)}
-                  title="Click to edit"
+                  className={isStatic 
+                    ? "text-white font-bold text-center px-2 py-1 text-sm"
+                    : "text-white font-bold text-center cursor-pointer hover:bg-gray-700/50 px-2 py-1 rounded transition-colors text-sm"
+                  }
+                  onClick={isStatic ? undefined : () => setEditingPrevious(true)}
+                  title={isStatic ? undefined : "Click to edit"}
                   style={{ fontSize: `${Math.max(10, previousBubbleSize / 8)}px` }}
                 >
                   {formatNumber(previousWeekFavorites)}
@@ -165,7 +186,7 @@ const FavoriteCard: React.FC = () => {
                 height: `${currentBubbleSize}px` 
               }}
             >
-              {editingCurrent ? (
+              {editingCurrent && !isStatic ? (
                 <input
                   type="text"
                   value={formatNumber(currentWeekFavorites)}
@@ -177,9 +198,12 @@ const FavoriteCard: React.FC = () => {
                 />
               ) : (
                 <span 
-                  className="text-white font-bold text-center cursor-pointer hover:bg-blue-700/50 px-2 py-1 rounded transition-colors text-sm"
-                  onClick={() => setEditingCurrent(true)}
-                  title="Click to edit"
+                  className={isStatic 
+                    ? "text-white font-bold text-center px-2 py-1 text-sm"
+                    : "text-white font-bold text-center cursor-pointer hover:bg-blue-700/50 px-2 py-1 rounded transition-colors text-sm"
+                  }
+                  onClick={isStatic ? undefined : () => setEditingCurrent(true)}
+                  title={isStatic ? undefined : "Click to edit"}
                   style={{ fontSize: `${Math.max(10, currentBubbleSize / 8)}px` }}
                 >
                   {formatNumber(currentWeekFavorites)}

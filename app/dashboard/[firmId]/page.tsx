@@ -128,6 +128,7 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
                   previousWeek={firmData.visitsPinkPrevious}
                   currentWeek={firmData.visitsPinkCurrent}
                   favoritesAdded={firmData.favoritesAdded}
+                  favoritesChange={firmData.favoritesChange}
                   isStatic={true}
                 />
               </div>
