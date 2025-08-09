@@ -8,13 +8,16 @@ import { getLogoById } from '@/data/logoData'
 interface HeaderProps {
   onLogoChange?: (logoId: string) => void
   onFirmNameChange?: (firmName: string) => void
+  currentFirmName?: string
+  currentLogoId?: string
+  isStatic?: boolean
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange }) => {
-  const [firmName, setFirmName] = useState('Funding Pips')
+const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange, currentFirmName, currentLogoId: propLogoId, isStatic = false }) => {
+  const [firmName, setFirmName] = useState(currentFirmName || 'Funding Pips')
   const [currentWeek, setCurrentWeek] = useState('Jun 28 - Aug 3')
   const [pfmVisitors, setPfmVisitors] = useState(258351)
-  const [currentLogoId, setCurrentLogoId] = useState('fundingpips')
+  const [currentLogoId, setCurrentLogoId] = useState(propLogoId || 'fundingpips')
   const [editingFirmName, setEditingFirmName] = useState(false)
   const [editingCurrentWeek, setEditingCurrentWeek] = useState(false)
   const [editingPfmVisitors, setEditingPfmVisitors] = useState(false)
@@ -64,9 +67,9 @@ const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange }) => {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
           <div 
-            className="cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => setShowLogoSelector(true)}
-            title="Click to change logo"
+            className={isStatic ? "cursor-default" : "cursor-pointer hover:opacity-80 transition-opacity"}
+            onClick={isStatic ? undefined : () => setShowLogoSelector(true)}
+            title={isStatic ? undefined : "Click to change logo"}
           >
             <CompanyLogo 
               logoId={currentLogoId} 
@@ -75,7 +78,7 @@ const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange }) => {
             />
           </div>
           <div>
-            {editingFirmName ? (
+            {editingFirmName && !isStatic ? (
               <input
                 type="text"
                 value={firmName}
@@ -87,9 +90,12 @@ const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange }) => {
               />
             ) : (
               <h1 
-                className="text-2xl font-bold text-white cursor-pointer hover:bg-gray-700/20 px-2 py-1 rounded transition-colors -ml-2"
-                onClick={() => setEditingFirmName(true)}
-                title="Click to edit"
+                className={isStatic 
+                  ? "text-2xl font-bold text-white px-2 py-1 -ml-2"
+                  : "text-2xl font-bold text-white cursor-pointer hover:bg-gray-700/20 px-2 py-1 rounded transition-colors -ml-2"
+                }
+                onClick={isStatic ? undefined : () => setEditingFirmName(true)}
+                title={isStatic ? undefined : "Click to edit"}
               >
                 {firmName}
               </h1>
