@@ -39,45 +39,11 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
 
   // Create leaderboard data from firmData and competitors
   const leaderboardData = React.useMemo(() => {
-    if (!firmData) return []
+    if (!firmData || !competitors.length) return []
     
-    // Combine firm and competitors
-    const allFirms = [...competitors]
-    
-    // Ensure target firm is in 4th visual position
-    const targetPosition = 3 // 0-indexed for 4th position
-    
-    // Sort by position
-    allFirms.sort((a, b) => a.currentPosition - b.currentPosition)
-    
-    // Find target firm index
-    const targetIndex = allFirms.findIndex(f => f.currentPosition === firmData.currentPosition)
-    
-    // Insert target firm at the correct position if not found
-    if (targetIndex === -1) {
-      allFirms.splice(targetPosition, 0, firmData)
-    } else if (targetIndex !== targetPosition) {
-      // Move target firm to 4th position
-      allFirms.splice(targetIndex, 1)
-      allFirms.splice(targetPosition, 0, firmData)
-    }
-    
-    // Ensure we have exactly 5 items
-    while (allFirms.length < 5) {
-      allFirms.push({
-        firmName: '???',
-        currentPosition: allFirms.length + 1,
-        previousPosition: allFirms.length + 1,
-        revenueCurrent: 100000 + Math.random() * 50000,
-        cfdShare: 40 + Math.random() * 20,
-        favorites: 15000 + Math.random() * 3000,
-        rating: 4 + Math.random() * 0.5,
-        reviews: 500 + Math.random() * 200
-      })
-    }
-    
-    // Take only first 5
-    return allFirms.slice(0, 5).map(firm => ({
+    // Use the competitors array that already comes from getContextualRanking
+    // This array is already sorted and filtered by the conditional logic
+    return competitors.map(firm => ({
       rank: firm.currentPosition,
       name: firm.firmName === firmData.firmName ? firmData.firmName : '???',
       favorites: firm.visitsPinkCurrent,  // Coluna H - dados reais para todos

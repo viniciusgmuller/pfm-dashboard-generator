@@ -121,6 +121,7 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
                 <TrafficCard 
                   previousWeek={firmData.visitsAzulPrevious}
                   currentWeek={firmData.trafficCurrent}
+                  cfdShareValue={firmData.cfdShare}
                   isStatic={true}
                 />
                 <FavoriteCard 

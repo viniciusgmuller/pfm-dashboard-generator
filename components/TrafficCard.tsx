@@ -5,10 +5,22 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BarChart3, TrendingDown, TrendingUp } from 'lucide-react'
 
-const TrafficCard: React.FC = () => {
-  const [currentWeekTraffic, setCurrentWeekTraffic] = useState(151280)
-  const [previousWeekTraffic, setPreviousWeekTraffic] = useState(165650)
-  const [cfdShare, setCfdShare] = useState(10.0) // Percentage of CFD Firm-Page Visits
+interface TrafficCardProps {
+  previousWeek?: number
+  currentWeek?: number
+  cfdShareValue?: number
+  isStatic?: boolean
+}
+
+const TrafficCard: React.FC<TrafficCardProps> = ({ 
+  previousWeek, 
+  currentWeek, 
+  cfdShareValue,
+  isStatic = false 
+}) => {
+  const [currentWeekTraffic, setCurrentWeekTraffic] = useState(currentWeek || 151280)
+  const [previousWeekTraffic, setPreviousWeekTraffic] = useState(previousWeek || 165650)
+  const [cfdShare, setCfdShare] = useState(cfdShareValue || 10.0) // Percentage of CFD Firm-Page Visits
   const [editingCurrent, setEditingCurrent] = useState(false)
   const [editingPrevious, setEditingPrevious] = useState(false)
   const [editingCfdShare, setEditingCfdShare] = useState(false)
@@ -88,7 +100,7 @@ const TrafficCard: React.FC = () => {
                 className="w-full bg-gray-600 rounded-lg flex flex-col items-center justify-center transition-all duration-1000 ease-out"
                 style={{ height: `${previousWeekHeight}%` }}
               >
-                {editingPrevious ? (
+                {editingPrevious && !isStatic ? (
                   <input
                     type="text"
                     value={formatNumber(previousWeekTraffic)}
@@ -100,9 +112,12 @@ const TrafficCard: React.FC = () => {
                   />
                 ) : (
                   <span 
-                    className="text-white font-bold text-center cursor-pointer hover:bg-gray-700/50 px-1 py-1 rounded transition-colors"
-                    onClick={() => setEditingPrevious(true)}
-                    title="Click to edit"
+                    className={isStatic 
+                      ? "text-white font-bold text-center px-1 py-1"
+                      : "text-white font-bold text-center cursor-pointer hover:bg-gray-700/50 px-1 py-1 rounded transition-colors"
+                    }
+                    onClick={isStatic ? undefined : () => setEditingPrevious(true)}
+                    title={isStatic ? undefined : "Click to edit"}
                     style={{ fontSize: `${Math.max(10, 16)}px` }}
                   >
                     {formatNumber(previousWeekTraffic)}
@@ -119,7 +134,7 @@ const TrafficCard: React.FC = () => {
                 className="w-full bg-blue-600 rounded-lg flex flex-col items-center justify-center transition-all duration-1000 ease-out"
                 style={{ height: `${currentWeekHeight}%` }}
               >
-                {editingCurrent ? (
+                {editingCurrent && !isStatic ? (
                   <input
                     type="text"
                     value={formatNumber(currentWeekTraffic)}
@@ -131,9 +146,12 @@ const TrafficCard: React.FC = () => {
                   />
                 ) : (
                   <span 
-                    className="text-white font-bold text-center cursor-pointer hover:bg-blue-700/50 px-1 py-1 rounded transition-colors"
-                    onClick={() => setEditingCurrent(true)}
-                    title="Click to edit"
+                    className={isStatic 
+                      ? "text-white font-bold text-center px-1 py-1"
+                      : "text-white font-bold text-center cursor-pointer hover:bg-blue-700/50 px-1 py-1 rounded transition-colors"
+                    }
+                    onClick={isStatic ? undefined : () => setEditingCurrent(true)}
+                    title={isStatic ? undefined : "Click to edit"}
                     style={{ fontSize: `${Math.max(10, 16)}px` }}
                   >
                     {formatNumber(currentWeekTraffic)}
@@ -203,7 +221,7 @@ const TrafficCard: React.FC = () => {
                   
                   {/* Percentage below chart */}
                   <div className="text-center">
-                    {editingCfdShare ? (
+                    {editingCfdShare && !isStatic ? (
                       <input
                         type="text"
                         value={tempCfdValue}
@@ -231,14 +249,17 @@ const TrafficCard: React.FC = () => {
                       />
                     ) : (
                       <span 
-                        className="text-white text-xl font-bold cursor-pointer hover:bg-gray-700/50 px-2 py-1 rounded transition-colors"
-                        onClick={() => {
+                        className={isStatic 
+                          ? "text-white text-xl font-bold px-2 py-1"
+                          : "text-white text-xl font-bold cursor-pointer hover:bg-gray-700/50 px-2 py-1 rounded transition-colors"
+                        }
+                        onClick={isStatic ? undefined : () => {
                           setTempCfdValue(cfdShare.toString())
                           setEditingCfdShare(true)
                         }}
-                        title="Click to edit"
+                        title={isStatic ? undefined : "Click to edit"}
                       >
-                        {cfdShare.toFixed(1)}%
+                        {isStatic ? `${cfdShare}%` : `${cfdShare.toFixed(1)}%`}
                       </span>
                     )}
                   </div>
