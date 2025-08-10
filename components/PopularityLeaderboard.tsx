@@ -389,7 +389,11 @@
                         backgroundColor: isCurrentFirm ? '#1E2244' : undefined
                       }}
                     >
-                      <div className={cn("flex items-center gap-3 relative z-40 pointer-events-auto", isCurrentFirm ? "text-sm" : "text-xs")}>
+                      <div className={cn(
+                        "flex items-center gap-3 relative z-40 pointer-events-auto", 
+                        !isCurrentFirm && "blur-lg",
+                        isCurrentFirm ? "text-sm" : "text-xs"
+                      )}>
                         <div className="flex flex-col items-center gap-1 group pointer-events-auto">
                           {isEditingRating ? (
                             <input

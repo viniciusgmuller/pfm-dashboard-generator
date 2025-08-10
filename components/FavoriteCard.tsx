@@ -10,6 +10,8 @@ interface FavoriteCardProps {
   currentWeek?: number
   favoritesAdded?: number
   favoritesChange?: number
+  currentPosition?: number
+  previousPosition?: number
   isStatic?: boolean
 }
 
@@ -18,12 +20,14 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
   currentWeek, 
   favoritesAdded,
   favoritesChange,
+  currentPosition,
+  previousPosition,
   isStatic = false 
 }) => {
   const [currentWeekFavorites, setCurrentWeekFavorites] = useState(currentWeek ?? 16514)
   const [previousWeekFavorites, setPreviousWeekFavorites] = useState(previousWeek ?? 16269)
-  const [currentRanking, setCurrentRanking] = useState(1)
-  const [previousRanking, setPreviousRanking] = useState(3)
+  const [currentRanking, setCurrentRanking] = useState(currentPosition ?? 1)
+  const [previousRanking, setPreviousRanking] = useState(previousPosition ?? 3)
   const [editingCurrent, setEditingCurrent] = useState(false)
   const [editingPrevious, setEditingPrevious] = useState(false)
   const [editingCurrentRanking, setEditingCurrentRanking] = useState(false)
@@ -226,7 +230,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
                   style={{ backgroundColor: '#322D1C' }}
                 >
                   <Award className="w-4 h-4" />
-                  #1 Position
+                  #{currentRanking} Position
                 </Badge>
               ) : (
                 <Badge className={`px-2 py-1 text-xs flex items-center gap-1 ${

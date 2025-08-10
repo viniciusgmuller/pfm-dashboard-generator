@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { CompanyLogo, LogoSelector } from '@/components/logos'
 import { getLogoById } from '@/data/logoData'
+import { globalConfig } from '@/lib/globalConfig'
 
 interface HeaderProps {
   onLogoChange?: (logoId: string) => void
@@ -15,9 +16,9 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange, currentFirmName, currentLogoId: propLogoId, isStatic = false }) => {
   const [firmName, setFirmName] = useState(currentFirmName || 'Funding Pips')
-  const [currentWeek, setCurrentWeek] = useState('Jun 28 - Aug 3')
-  const [pfmVisitors, setPfmVisitors] = useState(258351)
+  const [currentWeek, setCurrentWeek] = useState(globalConfig.currentWeek)
   const [currentLogoId, setCurrentLogoId] = useState(propLogoId || 'fundingpips')
+  const [pfmVisitors, setPfmVisitors] = useState(globalConfig.pfmVisitors)
   const [editingFirmName, setEditingFirmName] = useState(false)
   const [editingCurrentWeek, setEditingCurrentWeek] = useState(false)
   const [editingPfmVisitors, setEditingPfmVisitors] = useState(false)
