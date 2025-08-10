@@ -14,6 +14,7 @@ interface FirmData {
   previousPosition: number
   revenueCurrent: number
   cfdShare: number
+  visitsPinkCurrent?: number
   favorites?: number
   rating?: number
   reviews?: number
@@ -46,7 +47,7 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
     return competitors.map(firm => ({
       rank: firm.currentPosition,
       name: firm.firmName === firmData.firmName ? firmData.firmName : '???',
-      favorites: firm.visitsPinkCurrent,  // Coluna H - dados reais para todos
+      favorites: firm.visitsPinkCurrent || firm.favorites || 0,  // Coluna H - dados reais para todos
       revenue: firm.revenueCurrent,       // Revenue real para todos
       traffic: firm.cfdShare,             // Coluna N - dados reais para todos
       rating: firm.rating || (4 + Math.random() * 0.5),
