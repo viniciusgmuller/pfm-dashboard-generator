@@ -218,7 +218,11 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
                       backgroundColor: isCurrentFirm ? '#1E2244' : undefined
                     }}
                   >
-                    <div className={cn("flex items-center gap-3 relative z-40", isCurrentFirm ? "text-sm" : "text-xs")}>
+                    <div className={cn(
+                      "flex items-center gap-3 relative z-40", 
+                      !isCurrentFirm && "blur-lg", 
+                      isCurrentFirm ? "text-sm" : "text-xs"
+                    )}>
                       <div className="flex flex-col items-center gap-1">
                         <div 
                           className={cn(

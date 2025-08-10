@@ -47,7 +47,7 @@ This project is a **Next.js 14** dashboard application built for tracking and an
 #### 1. Header Component
 - Displays FundingPips branding
 - Shows week selector (Previous Week vs Current Week)
-- Displays total metrics (PFM Visits: 258,351 | CFD Visits: 108,346)
+- Displays total metrics (PFM Visits: 108,346 | CFD Visits: 108,346)
 
 #### 2. PopularityLeaderboard Component
 - Shows top 5 prop firms ranking
