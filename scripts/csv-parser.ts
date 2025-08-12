@@ -103,14 +103,6 @@ export function getContextualRanking(
   // Extract contextual window
   const contextualFirms = validFirms.slice(startIndex, endIndex + 1)
   
-  // Anonymize competitors (keep metrics but hide names)
-  return contextualFirms.map(firm => {
-    if (firm.firmName === targetFirm.firmName) {
-      return firm
-    }
-    return {
-      ...firm,
-      firmName: '???'
-    }
-  })
+  // Return all firms with their actual names (no anonymization)
+  return contextualFirms
 }

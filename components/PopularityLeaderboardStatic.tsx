@@ -35,8 +35,6 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
   competitors = [],
   isStatic = true
 }) => {
-  const currentFirmName = propFirmName || firmData?.firmName || "Funding Pips"
-  const currentFirmLogo = propLogoId || getLogoIdFromFirmName(currentFirmName)
 
   // Create leaderboard data from firmData and competitors
   const leaderboardData = React.useMemo(() => {
@@ -46,7 +44,7 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
     // This array is already sorted and filtered by the conditional logic
     return competitors.map(firm => ({
       rank: firm.currentPosition,
-      name: firm.firmName === firmData.firmName ? firmData.firmName : '???',
+      name: firm.firmName,  // Show actual firm names for all competitors
       favorites: firm.visitsPinkCurrent || firm.favorites || 0,  // Coluna H - dados reais para todos
       revenue: firm.revenueCurrent,       // Revenue real para todos
       traffic: firm.cfdShare,             // Coluna N - dados reais para todos
@@ -221,31 +219,8 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
                   >
                     <div className={cn(
                       "flex items-center gap-3 relative z-40", 
-                      !isCurrentFirm && "blur-lg", 
                       isCurrentFirm ? "text-sm" : "text-xs"
                     )}>
-                      <div className="flex flex-col items-center gap-1">
-                        <div 
-                          className={cn(
-                            "px-1.5 py-0.5 rounded-full border",
-                            isCurrentFirm 
-                              ? "bg-blue-900/30 border-blue-500" 
-                              : "bg-gray-700/30 border-gray-500"
-                          )}
-                        >
-                          <span className={cn(
-                            "font-bold",
-                            isCurrentFirm ? "text-xs text-white" : "text-[10px] text-gray-200"
-                          )}>
-                            {item.rating.toFixed(1)}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-0.5">
-                          {renderStars(item.rating, isCurrentFirm)}
-                        </div>
-                      </div>
-                      
                       <div className="flex flex-col items-center gap-0">
                         <DollarSign className={cn(
                           "w-4 h-4",
@@ -255,6 +230,7 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
                         <span 
                           className={cn(
                             "font-medium",
+                            !isCurrentFirm && "blur-lg",
                             isCurrentFirm ? "text-xs text-white" : "text-[10px] text-gray-200"
                           )}
                         >
@@ -271,6 +247,7 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
                         <span 
                           className={cn(
                             "font-medium",
+                            !isCurrentFirm && "blur-lg",
                             isCurrentFirm ? "text-xs text-white" : "text-[10px] text-gray-200"
                           )}
                         >
@@ -287,6 +264,7 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
                         <span 
                           className={cn(
                             "font-medium",
+                            !isCurrentFirm && "blur-lg",
                             isCurrentFirm ? "text-xs text-white" : "text-[10px] text-gray-200"
                           )}
                         >
@@ -311,26 +289,21 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
                         {getRankIcon(item.rank)}
                       </div>
                       
-                      {isCurrentFirm ? (
-                        <div className="flex items-center gap-3">
-                          <CompanyLogo 
-                            logoId={currentFirmLogo} 
-                            size={32}
-                            fallbackText="FP"
-                          />
-                          <div className="flex flex-col">
-                            <span className="text-lg font-semibold text-blue-400">
-                              {currentFirmName}
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
+                      <div className="flex items-center gap-3">
+                        <CompanyLogo 
+                          logoId={getLogoIdFromFirmName(item.name)} 
+                          size={32}
+                          fallbackText={item.name.substring(0, 2).toUpperCase()}
+                        />
                         <div className="flex flex-col">
-                          <span className="text-lg font-semibold text-gray-400">
+                          <span className={cn(
+                            "text-lg font-semibold",
+                            isCurrentFirm ? "text-blue-400" : "text-gray-400"
+                          )}>
                             {item.name}
                           </span>
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
