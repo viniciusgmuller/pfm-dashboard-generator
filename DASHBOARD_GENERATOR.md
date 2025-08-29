@@ -2,7 +2,28 @@
 
 ## Visão Geral
 
-Sistema de geração automatizada de dashboards em PNG a partir de dados CSV. Cada firm recebe um dashboard personalizado com ranking contextual (3 posições acima, 1 abaixo).
+Sistema de geração automatizada de dashboards em PNG a partir de dados CSV com suporte a múltiplas categorias. Cada firm recebe um dashboard personalizado com ranking contextual e logos específicos da categoria.
+
+### Características
+
+- ✅ **Múltiplas categorias**: Prop Trading e Futures
+- ✅ **Logos específicos**: Cada categoria tem seu conjunto de logos
+- ✅ **Detecção automática**: Categoria detectada pelo nome do arquivo CSV
+- ✅ **Alta qualidade**: Suporte a scale 2x e 3x para melhor resolução
+- ✅ **Headless**: Gera imagens sem abrir navegador
+- ✅ **Ranking contextual**: Mostra competidores vizinhos anonimizados
+
+## Categorias Suportadas
+
+### 1. Prop Trading (Padrão)
+- **Arquivo CSV**: `data/weekly/data.csv`
+- **Categoria**: `prop-trading` (detectada automaticamente)
+- **Logos**: FundingPips, FTMO, The5ers, Alpha Capital, etc.
+
+### 2. Futures
+- **Arquivo CSV**: `data/weekly/datafutures.csv`  
+- **Categoria**: `futures` (detectada automaticamente)
+- **Logos**: My Funded Futures, Topstep, Alpha Futures, etc.
 
 ## Estrutura do CSV
 
@@ -10,7 +31,7 @@ O arquivo CSV deve ter as seguintes colunas (em ordem):
 
 | Coluna | Nome | Descrição | Exemplo |
 |--------|------|-----------|---------|
-| A | Firms | Nome da empresa | Funding Pips |
+| A | Firms | Nome da empresa | FundingPips |
 | B | Previous Position | Posição anterior no ranking | 5 |
 | C | Popularity Ranking | Posição atual no ranking | 4 |
 | D | Previous Week | Revenue semana anterior | $145000 |
@@ -27,114 +48,197 @@ O arquivo CSV deve ter as seguintes colunas (em ordem):
 
 ## Como Usar
 
-### 1. Preparar o CSV
+### 1. Iniciar o servidor Next.js
 
-Coloque seu arquivo CSV em `data/weekly/data.csv` ou especifique o caminho.
+```bash
+npm run dev
+```
 
 ### 2. Gerar Dashboards
 
+#### Prop Trading (Qualidade Padrão)
 ```bash
-# Usando o script npm (recomendado)
 npm run generate-dashboards -- --input data/weekly/data.csv
+```
 
-# Com opções customizadas
-npm run generate-dashboards -- \
-  --input data/weekly/data.csv \
-  --output ./output/dashboards \
-  --width 1560 \
-  --height 850
+#### Prop Trading (Alta Qualidade 2x)
+```bash
+npm run generate-dashboards -- --input data/weekly/data.csv --scale 2
+```
 
-# Alta resolução (2x)
-npm run generate-dashboards -- \
-  --input data/weekly/data.csv \
-  --scale 2
+#### Futures (Qualidade Padrão)
+```bash
+npm run generate-dashboards -- --input data/weekly/datafutures.csv
+```
 
-# Máxima qualidade (3x)
+#### Futures (Alta Qualidade 2x)
+```bash
+npm run generate-dashboards -- --input data/weekly/datafutures.csv --scale 2
+```
+
+#### Exemplos com Customização
+```bash
+# Qualidade máxima (3x) com output customizado
 npm run generate-dashboards -- \
   --input data/weekly/data.csv \
   --scale 3 \
   --output ./output/high-res
+
+# Futures em alta qualidade
+npm run generate-dashboards -- \
+  --input data/weekly/datafutures.csv \
+  --scale 2 \
+  --output ./output/futures-hq
 ```
 
 ### 3. Opções Disponíveis
 
 | Opção | Descrição | Padrão |
 |-------|-----------|--------|
-| `-i, --input <file>` | Arquivo CSV de entrada (obrigatório) | - |
-| `-o, --output <dir>` | Diretório de saída para PNGs | ./output/dashboards |
-| `-w, --width <number>` | Largura do dashboard em pixels | 1560 |
-| `--height <number>` | Altura do dashboard em pixels | 850 |
-| `--scale <number>` | Fator de escala da imagem (1x, 2x, 3x) | 1 |
-| `-q, --quality <number>` | Qualidade da imagem para JPEG (1-100) | 90 |
-| `-f, --format <type>` | Formato de saída (png, jpeg, pdf) | png |
+| `--input <file>` | Arquivo CSV de entrada (obrigatório) | - |
+| `--output <dir>` | Diretório de saída para PNGs | ./output/dashboards |
+| `--scale <number>` | Fator de escala para qualidade (1x, 2x, 3x) | 1 |
+
+### 4. Detecção Automática de Categoria
+
+O sistema detecta automaticamente a categoria baseado no nome do arquivo:
+
+- **`data.csv`** → categoria `prop-trading`
+- **`datafutures.csv`** → categoria `futures`
+
+Isso garante que os logos corretos sejam usados automaticamente.
+
+## Configuração de Qualidade (Scale)
+
+O parâmetro `--scale` controla a qualidade das imagens geradas:
+
+| Scale | Resolução | Uso Recomendado |
+|-------|-----------|-----------------|
+| `1` | 1560x850 (padrão) | Visualização rápida, testes |
+| `2` | 3120x1700 (alta qualidade) | Apresentações, relatórios |
+| `3` | 4680x2550 (máxima qualidade) | Impressão, materiais finais |
+
+**Importante**: O scale usa `deviceScaleFactor` para manter as proporções visuais corretas, apenas aumentando a resolução interna das imagens.
 
 ## Lógica do Ranking Contextual
 
 Para cada firm, o sistema:
 
-1. **Posiciona a firm na 4ª linha visual** (sempre)
-2. **Mostra 3 posições acima** no ranking real
-3. **Mostra 1 posição abaixo** no ranking real
-4. **Anonimiza vizinhas** com nome "???" mas mantém métricas reais
+1. **Mostra a firm atual** em destaque com nome real
+2. **Mostra competidores vizinhos** com logos mas nomes obscurecidos  
+3. **Mantém métricas reais** de todos os competidores
+4. **Usa logos da categoria correta** automaticamente
 
-### Exemplo:
-Se "Alpha Capital" está em #4 no ranking:
-- Linha 1: Firm #1 (??? mas com métricas reais)
-- Linha 2: Firm #2 (??? mas com métricas reais)  
-- Linha 3: Firm #3 (??? mas com métricas reais)
-- **Linha 4: Alpha Capital #4** (destacado com nome e métricas reais)
-- Linha 5: Firm #5 (??? mas com métricas reais)
+### Exemplo - Prop Trading:
+Se "FundingPips" está em #1:
+- **Linha 1: FundingPips** (logo + nome real + métricas reais)
+- Linha 2: The5ers (logo real + nome obscurecido + métricas reais)
+- Linha 3: Alpha Capital (logo real + nome obscurecido + métricas reais)
+- Linha 4: E8 Markets (logo real + nome obscurecido + métricas reais)
 
-**Métricas mostradas**:
-- **Favorites**: Coluna H do CSV (Current Week)
-- **Revenue**: Coluna E do CSV (Revenue Generated)  
-- **Visits**: Coluna N do CSV (% Share)
-- **Rating**: Valor calculado automaticamente
+### Exemplo - Futures:
+Se "Topstep" está em #2:
+- Linha 1: My Funded Futures (logo real + nome obscurecido + métricas reais)
+- **Linha 2: Topstep** (logo + nome real + métricas reais)
+- Linha 3: Alpha Futures (logo real + nome obscurecido + métricas reais)
+- Linha 4: Top One Futures (logo real + nome obscurecido + métricas reais)
 
 ## Estrutura de Arquivos Gerados
 
+### Prop Trading
 ```
 output/
 └── dashboards/
-    ├── Funding_Pips.png
+    ├── FundingPips.png
+    ├── The5ers.png
+    ├── Alpha_Capital.png
+    ├── E8_Markets.png
     ├── FTMO.png
-    ├── MyForexFunds.png
     └── ...
 ```
 
+### Futures
+```
+output/
+└── dashboards/ (ou diretório personalizado)
+    ├── My_Funded_Futures.png
+    ├── Topstep.png
+    ├── Alpha_Futures.png
+    ├── Top_One_Futures.png
+    ├── FundingTicks.png
+    └── ...
+```
+
+## Pré-requisitos
+
+1. **Next.js Server**: Deve estar rodando na porta 3000
+   ```bash
+   npm run dev
+   ```
+
+2. **Arquivos CSV**: Devem estar no formato correto
+   - `data/weekly/data.csv` para prop trading
+   - `data/weekly/datafutures.csv` para futures
+
+3. **Logos**: Devem estar configurados em:
+   - `/data/logoData.ts` (biblioteca de logos)
+   - `/lib/logoMapping.ts` (mapeamento nome → ID)
+
 ## Troubleshooting
 
-### Erro: "Server failed to start"
-- Verifique se a porta 3001 está livre
-- Certifique-se que o Next.js está instalado: `npm install`
-
-### Erro: "Failed to parse CSV"
-- Verifique o formato do CSV
-- Remova caracteres especiais dos valores monetários ($, vírgulas)
-- Use ponto (.) para decimais
-
-### Screenshots vazios
-- Aumente o timeout de espera
-- Verifique se o servidor Next.js está rodando corretamente
-
-## Arquitetura
-
-```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   CSV File  │────▶│  CSV Parser  │────▶│  Firm Data  │
-└─────────────┘     └──────────────┘     └─────────────┘
-                                                 │
-                                                 ▼
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  PNG Files  │◀────│  Puppeteer   │◀────│  Next.js    │
-└─────────────┘     └──────────────┘     │  Dashboard  │
-                                          └─────────────┘
+### ❌ Erro: "Next.js server is not running!"
+**Solução**: Inicie o servidor Next.js primeiro:
+```bash
+npm run dev
 ```
 
-## Componentes Modificados
+### ❌ Timeout durante a geração
+**Causa**: Muitas empresas ou servidor lento  
+**Solução**: Execute em lotes menores ou aumente o timeout
 
-- `/app/dashboard/[firmId]/page.tsx` - Página especial para captura
-- `/components/PopularityLeaderboardStatic.tsx` - Versão estática do ranking
-- `/scripts/generate-dashboards.ts` - Script principal
-- `/scripts/csv-parser.ts` - Parser e lógica contextual
-- `/scripts/types.ts` - Definições TypeScript
+### ❌ Screenshot com elementos vazios
+**Causa**: Dados faltando ou logos não encontrados  
+**Solução**: Verifique se os logos estão mapeados corretamente
+
+### ❌ Proporções incorretas com scale
+**Causa**: Versões antigas do script  
+**Solução**: Use apenas `deviceScaleFactor`, não multiplique viewport
+
+## Arquitetura do Sistema
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   CSV Files     │────▶│   CSV Parser     │────▶│   Firm Data     │
+│ • data.csv      │     │ • Category       │     │ • Rankings      │
+│ • datafutures.  │     │   Detection      │     │ • Competitors   │
+│   csv           │     │ • Data parsing   │     │ • Metrics       │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                                                           │
+                                                           ▼
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   PNG Files     │◀────│    Puppeteer     │◀────│   Next.js       │
+│ • High Quality  │     │ • Headless       │     │   Dashboard     │
+│ • Multiple      │     │ • Scale Support  │     │ • Dynamic Route │
+│   Categories    │     │ • Screenshots    │     │ • Logo System   │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+```
+
+## Arquivos Principais
+
+### Scripts
+- `/scripts/simple-generate.ts` - Script principal de geração
+- `/lib/csv-utils.ts` - Utilitários para parsing e ranking
+
+### Componentes Next.js  
+- `/app/dashboard/[firmId]/page.tsx` - Página dinâmica do dashboard
+- `/components/PopularityLeaderboardStatic.tsx` - Componente de ranking
+- `/components/Header.tsx` - Cabeçalho com logo da empresa
+
+### Configuração
+- `/lib/globalConfig.ts` - Configurações das categorias
+- `/data/logoData.ts` - Biblioteca de todos os logos
+- `/lib/logoMapping.ts` - Mapeamento nome da empresa → ID do logo
+
+### Dados
+- `/data/weekly/data.csv` - Dados das empresas prop trading
+- `/data/weekly/datafutures.csv` - Dados das empresas futures

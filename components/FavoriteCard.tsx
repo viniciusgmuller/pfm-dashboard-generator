@@ -22,7 +22,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({
   favoritesChange,
   currentPosition,
   previousPosition,
-  isStatic = false 
+  isStatic = false
 }) => {
   const [currentWeekFavorites, setCurrentWeekFavorites] = useState(currentWeek ?? 16514)
   const [previousWeekFavorites, setPreviousWeekFavorites] = useState(previousWeek ?? 16269)

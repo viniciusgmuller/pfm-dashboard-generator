@@ -32,4 +32,5 @@ export interface GenerationOptions {
   scale?: number
   quality?: number
   format?: 'png' | 'pdf' | 'jpeg'
+  headless?: boolean
 }

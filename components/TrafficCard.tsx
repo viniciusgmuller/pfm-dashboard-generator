@@ -10,13 +10,15 @@ interface TrafficCardProps {
   currentWeek?: number
   cfdShareValue?: number
   isStatic?: boolean
+  category?: string
 }
 
 const TrafficCard: React.FC<TrafficCardProps> = ({ 
   previousWeek, 
   currentWeek, 
   cfdShareValue,
-  isStatic = false 
+  isStatic = false,
+  category = 'prop-trading'
 }) => {
   const [currentWeekTraffic, setCurrentWeekTraffic] = useState(currentWeek || 151280)
   const [previousWeekTraffic, setPreviousWeekTraffic] = useState(previousWeek || 165650)
@@ -167,7 +169,9 @@ const TrafficCard: React.FC<TrafficCardProps> = ({
             <div className="flex items-center justify-center">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <h3 className="text-white font-medium text-base mb-1">Share of CFD</h3>
+                  <h3 className="text-white font-medium text-base mb-1">
+                    {category === 'futures' ? 'Share of Futures' : 'Share of CFD'}
+                  </h3>
                   <p className="text-gray-400 text-xs">Firm-Page Visits</p>
                 </div>
                 

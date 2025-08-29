@@ -8,6 +8,7 @@ import TrafficCard from '@/components/TrafficCard'
 import FavoriteCard from '@/components/FavoriteCard'
 import { getLogoIdFromFirmName } from '@/lib/logoMapping'
 import { useEffect, useState } from 'react'
+import { DashboardCategory } from '@/lib/globalConfig'
 
 interface FirmData {
   firmName: string
@@ -75,6 +76,7 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
   }
 
   const currentLogoId = getLogoIdFromFirmName(firmData.firmName)
+  const category = (searchParams.get('category') as DashboardCategory) || 'prop-trading'
 
   return (
     <main 
@@ -95,6 +97,7 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
           currentFirmName={firmData.firmName}
           currentLogoId={currentLogoId}
           isStatic={true}
+          category={category}
         />
         
         <div className="p-6 flex-1">
@@ -123,6 +126,7 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
                   currentWeek={firmData.trafficCurrent}
                   cfdShareValue={firmData.cfdShare}
                   isStatic={true}
+                  category={category}
                 />
                 <FavoriteCard 
                   previousWeek={firmData.visitsPinkPrevious}

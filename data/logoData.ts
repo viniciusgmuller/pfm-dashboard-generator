@@ -45,6 +45,23 @@ export const logoLibrary: LogoData[] = [
   { id: 'toponetrader', name: 'Top One Trader', filename: 'Firms=Top One Trader.svg', category: 'prop-trading' },
   { id: 'traddoo', name: 'Traddoo', filename: 'Firms=Traddoo.svg', category: 'prop-trading' },
   { id: 'tradethepool', name: 'Trade The Pool', filename: 'Firms=Trade The Pool.svg', category: 'prop-trading' },
+  
+  // Futures category logos
+  { id: 'myfundedfutures', name: 'My Funded Futures', filename: 'Select=My Funded Futures.svg', category: 'futures' },
+  { id: 'topstep', name: 'Topstep', filename: 'Select=Topstep.svg', category: 'futures' },
+  { id: 'alphafutures', name: 'Alpha Futures', filename: 'Select=Alpha Futures.svg', category: 'futures' },
+  { id: 'toponefutures', name: 'Top One Futures', filename: 'Select=Top One Futures.svg', category: 'futures' },
+  { id: 'fundingticks', name: 'FundingTicks', filename: 'Select=FundingTicks.svg', category: 'futures' },
+  { id: 'fundednextfutures', name: 'FundedNext Futures', filename: 'Select=FundedNext Futures.svg', category: 'futures' },
+  { id: 'apextrader', name: 'Apex Trader Funding', filename: 'Select=Apex Trader Funding.svg', category: 'futures' },
+  { id: 'aquafutures', name: 'AquaFutures', filename: 'Select=Aqua Futures.svg', category: 'futures' },
+  { id: 'takeprofittrader', name: 'Take Profit Trader', filename: 'Select=Take Profit Traders.svg', category: 'futures' },
+  { id: 'tradeify', name: 'Tradeify', filename: 'Select=Tradeify.svg', category: 'futures' },
+  { id: 'blueguardianfutures', name: 'Blue Guardian Futures', filename: 'Select=Blue Guardian Futures.svg', category: 'futures' },
+  { id: 'earn2trade', name: 'Earn2Trade', filename: 'Select=Earn2Trade.svg', category: 'futures' },
+  { id: 'thetradingpit', name: 'The Trading Pit', filename: 'Select=The Trading Pit.svg', category: 'futures' },
+  { id: 'tradeday', name: 'TradeDay', filename: 'Select=TradeDay.svg', category: 'futures' },
+  { id: 'traderslaunch', name: 'Traders Launch', filename: 'Select=Traders Launch.svg', category: 'futures' },
 ]
 
 export const getLogoById = (id: string): LogoData | undefined => {

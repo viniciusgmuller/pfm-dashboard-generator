@@ -70,16 +70,24 @@ async function generateDashboard(
   competitors: FirmData[],
   outputPath: string,
   serverUrl: string,
-  options: { width: number; height: number; scale?: number; quality?: number }
+  options: { width: number; height: number; scale?: number; quality?: number; headless?: boolean }
 ): Promise<void> {
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: options.headless !== false ? true : false, // Force true headless
     defaultViewport: {
       width: options.width,
       height: options.height,
       deviceScaleFactor: options.scale || 1
     },
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: [
+      '--no-sandbox', 
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--no-first-run',
+      '--disable-default-apps',
+      '--disable-extensions'
+    ]
   })
 
   try {
@@ -95,8 +103,10 @@ async function generateDashboard(
     console.log(`📸 Generating dashboard for ${firm.firmName}...`)
     await page.goto(dashboardUrl, { waitUntil: 'networkidle2' })
     
-    // Wait for dashboard to be ready
-    await page.waitForSelector('[data-ready="true"]', { timeout: 30000 })
+    // Wait for dashboard to be ready - check body attribute instead
+    await page.waitForFunction(() => {
+      return document.body.getAttribute('data-ready') === 'true'
+    }, { timeout: 30000 })
     
     // Additional wait for animations
     await new Promise(resolve => setTimeout(resolve, 2000))
@@ -124,6 +134,11 @@ async function generateDashboard(
 // Main execution
 async function main(options: GenerationOptions) {
   try {
+    // Auto-detect if this is futures data and adjust output directory if not explicitly set
+    if (options.inputFile.includes('datafutures') && options.outputDir === './output/dashboards') {
+      options.outputDir = './output/futures'
+    }
+    
     // Ensure output directory exists
     if (!fs.existsSync(options.outputDir)) {
       fs.mkdirSync(options.outputDir, { recursive: true })
@@ -134,10 +149,13 @@ async function main(options: GenerationOptions) {
     const firms = parseCSV(options.inputFile)
     console.log(`Found ${firms.length} firms in CSV`)
 
-    // Start Next.js server
-    const serverPort = 3001
+    // Use existing server - assume it's running
+    const serverPort = 3000
     const serverUrl = options.serverUrl || `http://localhost:${serverPort}`
-    const stopServer = await startNextServer(serverPort)
+    console.log('✅ Assuming Next.js server is running on port', serverPort)
+    
+    // We won't start/stop server automatically - user should have it running
+    const stopServer: (() => void) | null = null
 
     try {
       // Wait a bit for server to stabilize
@@ -157,15 +175,18 @@ async function main(options: GenerationOptions) {
             width: options.width || 1560,
             height: options.height || 850,
             scale: options.scale || 1,
-            quality: options.quality
+            quality: options.quality,
+            headless: options.headless !== false // Default to headless unless explicitly disabled
           }
         )
       }
 
       console.log(`🎉 Successfully generated ${firms.length} dashboards!`)
     } finally {
-      // Stop the server
-      stopServer()
+      // Stop the server only if we started it
+      if (stopServer) {
+        stopServer()
+      }
     }
   } catch (error) {
     console.error('❌ Error generating dashboards:', error)
@@ -188,6 +209,8 @@ program
   .option('--scale <number>', 'Image scale factor (1x, 2x, 3x)', '1')
   .option('-q, --quality <number>', 'Image quality for JPEG (1-100)', '90')
   .option('-f, --format <type>', 'Output format (png|pdf|jpeg)', 'png')
+  .option('--headless', 'Run in headless mode (no browser window)')
+  .option('--no-headless', 'Run with visible browser window')
   .action((options) => {
     const generationOptions: GenerationOptions = {
       inputFile: options.input,
@@ -197,10 +220,12 @@ program
       height: parseInt(options.height),
       scale: parseFloat(options.scale),
       quality: parseInt(options.quality),
-      format: options.format
+      format: options.format,
+      headless: options.headless !== false // Default to true unless --no-headless is used
     }
     
     console.log(`📸 Generating dashboards at ${generationOptions.scale}x scale...`)
+    console.log(`🖥️  Mode: ${generationOptions.headless ? 'Headless (no browser window)' : 'Visual (browser window visible)'}`)
     if (generationOptions.scale > 1) {
       console.log(`🔍 High resolution mode: ${generationOptions.width * generationOptions.scale}x${generationOptions.height * generationOptions.scale} pixels`)
     }

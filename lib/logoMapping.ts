@@ -26,6 +26,9 @@ export const getLogoIdFromFirmName = (firmName: string): string => {
     'fundingtraders': 'fundingtrader',
     'fundedtradingplus': 'fundedtradingplus',
     'blueberryfunded': 'blueberry',
+    'instantfunding': 'instantfunding',
+    'fintokei': 'fintokei',
+    'blueguardian': 'blueguardian',
     
     // Alternative spellings and variations
     'the5': 'the5ers',
@@ -37,6 +40,24 @@ export const getLogoIdFromFirmName = (firmName: string): string => {
     'blueberry': 'blueberry',
     'funding': 'fundingpips',
     'pips': 'fundingpips',
+    
+    // Futures firms mapping
+    'myfundedfutures': 'myfundedfutures',
+    'topstep': 'topstep',
+    'alphafutures': 'alphafutures',
+    'toponefutures': 'toponefutures',
+    'fundingticks': 'fundingticks',
+    'fundednextfutures': 'fundednextfutures',
+    'apextraderfunding': 'apextrader',
+    'apextrader': 'apextrader',
+    'aquafutures': 'aquafutures',
+    'takeprofittrader': 'takeprofittrader',
+    'tradeify': 'tradeify',
+    'blueguardianfutures': 'blueguardianfutures',
+    'earn2trade': 'earn2trade',
+    'thetradingpit': 'thetradingpit',
+    'tradeday': 'tradeday',
+    'traderslaunch': 'traderslaunch',
   }
   
   // Try direct match first
