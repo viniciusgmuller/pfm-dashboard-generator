@@ -3,7 +3,7 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Heart, DollarSign, Globe, Trophy, BarChart3, Star } from 'lucide-react'
+import { Heart, DollarSign, Globe, Trophy, BarChart3, Star, ArrowUp, ArrowDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CompanyLogo } from '@/components/logos'
 import { getLogoIdFromFirmName } from '@/lib/logoMapping'
@@ -50,7 +50,9 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
       traffic: firm.cfdShare,             // Coluna N - dados reais para todos
       rating: firm.rating || (4 + Math.random() * 0.5),
       reviews: firm.reviews || Math.round(500 + Math.random() * 200),
-      isTargetFirm: firm.firmName === firmData.firmName
+      isTargetFirm: firm.firmName === firmData.firmName,
+      previousPosition: firm.previousPosition,
+      currentPosition: firm.currentPosition
     }))
   }, [firmData, competitors])
 
@@ -131,6 +133,34 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
   const getRankBadgeVariant = (rank: number): "default" | "secondary" | "outline" => {
     if (rank <= 3) return "default"
     return "secondary"
+  }
+
+  const getRankingChange = (previousPosition: number, currentPosition: number) => {
+    if (previousPosition === 0 || currentPosition === 0) {
+      return null // No data available
+    }
+    
+    const change = previousPosition - currentPosition
+    
+    if (change > 0) {
+      return {
+        type: 'up' as const,
+        value: change,
+        color: 'text-green-500'
+      }
+    } else if (change < 0) {
+      return {
+        type: 'down' as const,
+        value: Math.abs(change),
+        color: 'text-red-500'
+      }
+    } else {
+      return {
+        type: 'same' as const,
+        value: 0,
+        color: 'text-gray-400'
+      }
+    }
   }
 
   const getBarWidth = (index: number): number => {
@@ -287,6 +317,36 @@ const PopularityLeaderboardStatic: React.FC<PopularityLeaderboardStaticProps> = 
                           #{item.rank}
                         </Badge>
                         {getRankIcon(item.rank)}
+                        {(() => {
+                          const rankingChange = getRankingChange(item.previousPosition, item.currentPosition)
+                          if (!rankingChange) return null
+                          
+                          return (
+                            <div className="flex items-center gap-1 ml-2">
+                              {rankingChange.type === 'up' && (
+                                <>
+                                  <ArrowUp className={cn("w-4 h-4", rankingChange.color)} />
+                                  <span className={cn("text-sm font-medium", rankingChange.color)}>
+                                    {rankingChange.value}
+                                  </span>
+                                </>
+                              )}
+                              {rankingChange.type === 'down' && (
+                                <>
+                                  <ArrowDown className={cn("w-4 h-4", rankingChange.color)} />
+                                  <span className={cn("text-sm font-medium", rankingChange.color)}>
+                                    {rankingChange.value}
+                                  </span>
+                                </>
+                              )}
+                              {rankingChange.type === 'same' && (
+                                <span className={cn("text-sm font-medium", rankingChange.color)}>
+                                  =
+                                </span>
+                              )}
+                            </div>
+                          )
+                        })()}
                       </div>
                       
                       <div className="flex items-center gap-3">

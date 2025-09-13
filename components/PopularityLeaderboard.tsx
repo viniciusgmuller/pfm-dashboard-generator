@@ -4,7 +4,7 @@
   import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
   import { Badge } from '@/components/ui/badge'
   import { Separator } from '@/components/ui/separator'
-  import { Heart, DollarSign, Globe, Trophy, TrendingUp, BarChart3, Star } from 'lucide-react'
+  import { Heart, DollarSign, Globe, Trophy, TrendingUp, BarChart3, Star, ArrowUp, ArrowDown } from 'lucide-react'
   import { cn } from '@/lib/utils'
   import { CompanyLogo } from '@/components/logos'
 
@@ -16,6 +16,8 @@
     traffic: number // Agora representa um percentual direto (ex: 58.6 para 58.6%)
     rating: number
     reviews: number
+    previousPosition?: number
+    currentPosition?: number
   }
 
   interface PopularityLeaderboardProps {
@@ -177,6 +179,34 @@
     const getRankBadgeVariant = (rank: number): "default" | "secondary" | "outline" => {
       if (rank <= 3) return "default"
       return "secondary"
+    }
+
+    const getRankingChange = (previousPosition: number | undefined, currentPosition: number | undefined) => {
+      if (!previousPosition || !currentPosition || previousPosition === 0 || currentPosition === 0) {
+        return null // No data available
+      }
+      
+      const change = previousPosition - currentPosition
+      
+      if (change > 0) {
+        return {
+          type: 'up' as const,
+          value: change,
+          color: 'text-green-500'
+        }
+      } else if (change < 0) {
+        return {
+          type: 'down' as const,
+          value: Math.abs(change),
+          color: 'text-red-500'
+        }
+      } else {
+        return {
+          type: 'same' as const,
+          value: 0,
+          color: 'text-gray-400'
+        }
+      }
     }
 
     const getBarWidth = (rank: number): number => {
@@ -546,6 +576,36 @@
                             </Badge>
                           )}
                           {getRankIcon(item.rank)}
+                          {(() => {
+                            const rankingChange = getRankingChange(item.previousPosition, item.currentPosition)
+                            if (!rankingChange) return null
+                            
+                            return (
+                              <div className="flex items-center gap-1 ml-2">
+                                {rankingChange.type === 'up' && (
+                                  <>
+                                    <ArrowUp className={cn("w-4 h-4", rankingChange.color)} />
+                                    <span className={cn("text-sm font-medium", rankingChange.color)}>
+                                      {rankingChange.value}
+                                    </span>
+                                  </>
+                                )}
+                                {rankingChange.type === 'down' && (
+                                  <>
+                                    <ArrowDown className={cn("w-4 h-4", rankingChange.color)} />
+                                    <span className={cn("text-sm font-medium", rankingChange.color)}>
+                                      {rankingChange.value}
+                                    </span>
+                                  </>
+                                )}
+                                {rankingChange.type === 'same' && (
+                                  <span className={cn("text-sm font-medium", rankingChange.color)}>
+                                    =
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </div>
                         
                         {isCurrentFirm ? (
