@@ -35,12 +35,17 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
   const [firmData, setFirmData] = useState<FirmData | null>(null)
   const [competitors, setCompetitors] = useState<FirmData[]>([])
   const [isReady, setIsReady] = useState(false)
+  const [config, setConfig] = useState<{
+    currentWeek?: string
+    totalVisits?: number
+  } | null>(null)
 
   useEffect(() => {
     // Parse firm data from URL params
     const dataParam = searchParams.get('data')
     const competitorsParam = searchParams.get('competitors')
-    
+    const configParam = searchParams.get('config')
+
     if (dataParam) {
       try {
         const parsedData = JSON.parse(decodeURIComponent(dataParam))
@@ -56,6 +61,16 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
         setCompetitors(parsedCompetitors)
       } catch (e) {
         console.error('Failed to parse competitors data:', e)
+      }
+    }
+
+    // Parse configuration from URL params
+    if (configParam) {
+      try {
+        const parsedConfig = JSON.parse(decodeURIComponent(configParam))
+        setConfig(parsedConfig)
+      } catch (e) {
+        console.error('Failed to parse config:', e)
       }
     }
 
@@ -91,13 +106,15 @@ export default function DashboardPage({ params }: { params: { firmId: string } }
       }}
     >
       <div className="w-full max-w-[1560px] max-h-[850px] flex flex-col relative">
-        <Header 
+        <Header
           onLogoChange={() => {}}
           onFirmNameChange={() => {}}
           currentFirmName={firmData.firmName}
           currentLogoId={currentLogoId}
           isStatic={true}
           category={category}
+          dynamicCurrentWeek={config?.currentWeek}
+          dynamicTotalVisits={config?.totalVisits}
         />
         
         <div className="p-6 flex-1">

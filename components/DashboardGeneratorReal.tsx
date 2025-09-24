@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Upload, Play, Download, Loader2 } from 'lucide-react'
+import { Upload, Play, Download, Loader2, Calendar, Users, Settings } from 'lucide-react'
 import { getContextualRanking } from '@/lib/csv-utils'
 import { parse } from 'csv-parse/browser/esm/sync'
 import { GeneratedDashboard, FirmData } from '@/types/dashboard'
-import html2canvas from 'html2canvas'
+import { DashboardCategory } from '@/lib/globalConfig'
 
 interface DashboardGeneratorRealProps {
   onGenerationComplete?: (dashboards: GeneratedDashboard[]) => void
@@ -59,6 +59,12 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
   const [csvContent, setCsvContent] = useState<string>('')
   const [firms, setFirms] = useState<FirmData[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
+
+  // Configuration states
+  const [currentWeek, setCurrentWeek] = useState<string>('')
+  const [totalVisits, setTotalVisits] = useState<number>(119734)
+  const [category, setCategory] = useState<DashboardCategory>('prop-trading')
+  const [scale, setScale] = useState<number>(2)
   const [progress, setProgress] = useState({
     total: 0,
     completed: 0,
@@ -68,182 +74,338 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
   })
   const [generatedDashboards, setGeneratedDashboards] = useState<GeneratedDashboard[]>([])
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file && file.type === 'text/csv') {
-      setCsvFile(file)
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const content = event.target?.result as string
-        setCsvContent(content)
-        try {
-          const parsedFirms = parseCSVContent(content)
-          setFirms(parsedFirms)
-          setProgress(prev => ({ ...prev, total: parsedFirms.length }))
-        } catch (error) {
-          console.error('Error parsing CSV:', error)
-          setProgress(prev => ({ 
-            ...prev, 
-            status: 'error', 
-            error: 'Failed to parse CSV file' 
-          }))
-        }
+  // Load saved configuration from localStorage
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('dashboard-generator-config')
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig)
+        setCurrentWeek(config.currentWeek || '')
+        setTotalVisits(config.totalVisits || 119734)
+        setCategory(config.category || 'prop-trading')
+        setScale(config.scale || 2)
+      } catch (error) {
+        console.error('Error loading saved configuration:', error)
       }
-      reader.readAsText(file)
     }
   }, [])
 
-  const generateDashboardForFirm = async (
-    firm: FirmData, 
-    competitors: FirmData[],
-    index: number,
-    total: number
-  ): Promise<GeneratedDashboard | null> => {
-    try {
-      // Open dashboard in a new tab/window for capture
-      const firmDataParam = encodeURIComponent(JSON.stringify(firm))
-      const competitorsParam = encodeURIComponent(JSON.stringify(competitors))
-      const dashboardUrl = `/dashboard/${firm.firmName.replace(/\s+/g, '-').toLowerCase()}?data=${firmDataParam}&competitors=${competitorsParam}`
-      
-      // Create a temporary window for rendering
-      const popup = window.open(dashboardUrl, '_blank', 'width=1560,height=850')
-      
-      if (!popup) {
-        throw new Error('Failed to open popup window')
+  // Auto-detect current week based on today's date
+  useEffect(() => {
+    if (!currentWeek) {
+      const today = new Date()
+      const startOfWeek = new Date(today)
+      startOfWeek.setDate(today.getDate() - today.getDay())
+      const endOfWeek = new Date(startOfWeek)
+      endOfWeek.setDate(startOfWeek.getDate() + 6)
+
+      const formatDate = (date: Date) => {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       }
 
-      // Wait for the dashboard to be ready
-      await new Promise((resolve, reject) => {
-        let attempts = 0
-        const maxAttempts = 30 // 30 seconds max
-
-        const checkReady = setInterval(() => {
-          attempts++
-          
-          if (attempts > maxAttempts) {
-            clearInterval(checkReady)
-            reject(new Error('Timeout waiting for dashboard to be ready'))
-            return
-          }
-
-          try {
-            if (popup.document && popup.document.body.getAttribute('data-ready') === 'true') {
-              clearInterval(checkReady)
-              resolve(true)
-            }
-          } catch (e) {
-            // Cross-origin or access issues, continue waiting
-          }
-        }, 1000)
-      })
-
-      // Additional wait for animations
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // Capture the popup content
-      const canvas = await html2canvas(popup.document.body, {
-        useCORS: true,
-        allowTaint: true,
-        logging: false
-      } as any)
-
-      // Close the popup
-      popup.close()
-
-      // Convert to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), 'image/png', 0.95)
-      })
-
-      // Upload to server
-      const formData = new FormData()
-      formData.append('image', blob)
-      formData.append('firmName', firm.firmName)
-      formData.append('index', index.toString())
-      formData.append('total', total.toString())
-
-      const response = await fetch('/api/generate-dashboard-real', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        return data.dashboard
-      }
-
-      return null
-    } catch (error) {
-      console.error(`Error generating dashboard for ${firm.firmName}:`, error)
-      return null
+      setCurrentWeek(`${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}`)
     }
-  }
+  }, [currentWeek])
+
+  // Save configuration to localStorage when changed
+  useEffect(() => {
+    const config = { currentWeek, totalVisits, category, scale }
+    localStorage.setItem('dashboard-generator-config', JSON.stringify(config))
+  }, [currentWeek, totalVisits, category, scale])
+
+  // Auto-detect category from CSV filename
+  useEffect(() => {
+    if (csvFile) {
+      const filename = csvFile.name.toLowerCase()
+      if (filename.includes('futures') || filename.includes('future')) {
+        setCategory('futures')
+        console.log('Detected futures category from filename:', filename)
+      } else {
+        setCategory('prop-trading')
+        console.log('Detected prop-trading category from filename:', filename)
+      }
+    }
+  }, [csvFile])
+
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+
+    // Reset previous state
+    setProgress({
+      total: 0,
+      completed: 0,
+      current: '',
+      status: 'idle',
+      error: ''
+    })
+
+    if (!file) return
+
+    // Validate file type
+    if (file.type !== 'text/csv' && !file.name.toLowerCase().endsWith('.csv')) {
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'Please select a valid CSV file'
+      }))
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'File size too large. Maximum 10MB allowed.'
+      }))
+      return
+    }
+
+    setCsvFile(file)
+    const reader = new FileReader()
+
+    reader.onerror = () => {
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'Failed to read file. Please try again.'
+      }))
+    }
+
+    reader.onload = (event) => {
+      const content = event.target?.result as string
+
+      if (!content) {
+        setProgress(prev => ({
+          ...prev,
+          status: 'error',
+          error: 'File appears to be empty'
+        }))
+        return
+      }
+
+      setCsvContent(content)
+      try {
+        const parsedFirms = parseCSVContent(content)
+
+        if (parsedFirms.length === 0) {
+          setProgress(prev => ({
+            ...prev,
+            status: 'error',
+            error: 'No valid data found in CSV file'
+          }))
+          return
+        }
+
+        // Validate required fields
+        const invalidFirms: { firm: FirmData, issues: string[] }[] = []
+
+        parsedFirms.forEach((firm, index) => {
+          const issues: string[] = []
+
+          if (!firm.firmName || firm.firmName.trim() === '') {
+            issues.push('missing firm name')
+          }
+          if (firm.currentPosition <= 0) {
+            issues.push('invalid current position')
+          }
+          if (firm.revenueCurrent < 0) {
+            issues.push('invalid revenue')
+          }
+          if (isNaN(firm.currentPosition) || isNaN(firm.revenueCurrent)) {
+            issues.push('non-numeric values')
+          }
+
+          if (issues.length > 0) {
+            invalidFirms.push({ firm, issues })
+          }
+        })
+
+        if (invalidFirms.length > 0) {
+          const errorDetails = invalidFirms.slice(0, 3).map(({ firm, issues }, index) =>
+            `Row ${index + 2}: "${firm.firmName || 'unnamed'}" - ${issues.join(', ')}`
+          ).join('\n')
+
+          const moreCount = invalidFirms.length > 3 ? `\n...and ${invalidFirms.length - 3} more` : ''
+
+          setProgress(prev => ({
+            ...prev,
+            status: 'error',
+            error: `${invalidFirms.length} firms have invalid data:\n${errorDetails}${moreCount}`
+          }))
+          return
+        }
+
+        setFirms(parsedFirms)
+        setProgress(prev => ({
+          ...prev,
+          total: parsedFirms.length,
+          status: 'idle'
+        }))
+      } catch (error) {
+        console.error('Error parsing CSV:', error)
+        setProgress(prev => ({
+          ...prev,
+          status: 'error',
+          error: 'Failed to parse CSV file. Please check the format and try again.'
+        }))
+      }
+    }
+
+    reader.readAsText(file)
+  }, [])
 
   const startGeneration = useCallback(async () => {
-    if (firms.length === 0) return
+    if (firms.length === 0) {
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'No firms data available. Please upload a CSV file first.'
+      }))
+      return
+    }
+
+    // Validate configuration
+    if (!currentWeek.trim()) {
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'Please specify the current week period'
+      }))
+      return
+    }
+
+    if (totalVisits <= 0) {
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'Total visits must be greater than 0'
+      }))
+      return
+    }
 
     setIsGenerating(true)
     setProgress({
       total: firms.length,
       completed: 0,
-      current: '',
+      current: 'Sending data to server for generation...',
       status: 'processing',
       error: ''
     })
     setGeneratedDashboards([])
 
-    const dashboards: GeneratedDashboard[] = []
+    try {
+      // Prepare form data for API
+      const formData = new FormData()
+      formData.append('csv', csvContent)
+      formData.append('currentWeek', currentWeek)
+      formData.append('totalVisits', totalVisits.toString())
+      formData.append('category', category)
+      formData.append('scale', scale.toString())
 
-    for (let i = 0; i < firms.length; i++) {
-      const firm = firms[i]
-      
-      setProgress(prev => ({
-        ...prev,
-        current: firm.firmName,
-        completed: i
-      }))
+      // Call the API endpoint
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        body: formData
+      })
 
-      try {
-        const competitors = getContextualRanking(firms, firm, 3, 1)
-        const dashboard = await generateDashboardForFirm(firm, competitors, i, firms.length)
-        
-        if (dashboard) {
-          dashboards.push(dashboard)
-          setGeneratedDashboards([...dashboards])
-        }
-      } catch (error) {
-        console.error(`Error processing ${firm.firmName}:`, error)
-        // Continue with next firm instead of stopping
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.details || error.error || 'Failed to generate dashboards')
       }
 
-      // Small delay between generations
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const result = await response.json()
+
+      if (!result.success || !result.dashboards || result.dashboards.length === 0) {
+        throw new Error('No dashboards were generated')
+      }
+
+      // Convert base64 data to blobs and URLs for display/download
+      const dashboards: GeneratedDashboard[] = []
+
+      for (const dashboard of result.dashboards) {
+        setProgress(prev => ({
+          ...prev,
+          current: `Processing ${dashboard.firmName}...`,
+          completed: dashboards.length
+        }))
+
+        // Convert base64 to blob
+        const byteCharacters = atob(dashboard.data)
+        const byteNumbers = new Array(byteCharacters.length)
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i)
+        }
+        const byteArray = new Uint8Array(byteNumbers)
+        const blob = new Blob([byteArray], { type: 'image/png' })
+        const url = URL.createObjectURL(blob)
+
+        const generatedDashboard: GeneratedDashboard = {
+          firmName: dashboard.firmName,
+          filename: dashboard.filename,
+          url,
+          blob,
+          timestamp: Date.now()
+        }
+
+        dashboards.push(generatedDashboard)
+        setGeneratedDashboards(prev => [...prev, generatedDashboard])
+      }
+
+      const finalStatus = dashboards.length > 0 ? 'completed' : 'error'
+      const statusMessage = dashboards.length > 0
+        ? `Successfully generated ${dashboards.length} dashboards!`
+        : 'Failed to generate any dashboards'
+
+      setProgress(prev => ({
+        ...prev,
+        completed: firms.length,
+        status: finalStatus,
+        current: statusMessage,
+        error: ''
+      }))
+
+      if (onGenerationComplete && dashboards.length > 0) {
+        onGenerationComplete(dashboards)
+      }
+
+    } catch (error) {
+      console.error('Error during generation:', error)
+      setProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      }))
+    } finally {
+      setIsGenerating(false)
     }
+  }, [firms, csvContent, currentWeek, totalVisits, category, scale, onGenerationComplete])
 
-    setProgress(prev => ({
-      ...prev,
-      completed: firms.length,
-      status: 'completed',
-      current: 'All dashboards generated!'
-    }))
+  const downloadAll = useCallback(async () => {
+    if (generatedDashboards.length === 0) return
 
-    setIsGenerating(false)
-    
-    if (onGenerationComplete) {
-      onGenerationComplete(dashboards)
-    }
-  }, [firms, onGenerationComplete])
-
-  const downloadAll = useCallback(() => {
-    generatedDashboards.forEach(dashboard => {
+    // For multiple files, create individual downloads (ZIP would require additional library)
+    for (const dashboard of generatedDashboards) {
       const link = document.createElement('a')
       link.href = dashboard.url
       link.download = dashboard.filename
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-    })
+
+      // Small delay between downloads to avoid browser blocking
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
   }, [generatedDashboards])
+
+  const downloadSingle = useCallback((dashboard: GeneratedDashboard) => {
+    const link = document.createElement('a')
+    link.href = dashboard.url
+    link.download = dashboard.filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }, [])
 
   return (
     <Card className="bg-[#1a1a1a]/90 border-[#2a2a2a] backdrop-blur-sm">
@@ -288,6 +450,165 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
           </label>
         </div>
 
+        {/* Configuration Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Date Configuration */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400 flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Current Week
+            </label>
+            <input
+              type="text"
+              value={currentWeek}
+              onChange={(e) => setCurrentWeek(e.target.value)}
+              placeholder="Sep 19 - Sep 25"
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              disabled={isGenerating}
+            />
+          </div>
+
+          {/* Total Visits Configuration */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Total Visits
+            </label>
+            <input
+              type="number"
+              value={totalVisits}
+              onChange={(e) => setTotalVisits(parseInt(e.target.value) || 0)}
+              placeholder="119734"
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+              disabled={isGenerating}
+            />
+          </div>
+
+          {/* Category Selection */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400 flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as DashboardCategory)}
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg text-white focus:border-blue-500 focus:outline-none"
+              disabled={isGenerating}
+            >
+              <option value="prop-trading">Prop Trading</option>
+              <option value="futures">Futures</option>
+            </select>
+          </div>
+
+          {/* Scale/Quality Selection */}
+          <div className="space-y-2">
+            <label className="text-sm text-gray-400 flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Quality
+            </label>
+            <select
+              value={scale}
+              onChange={(e) => setScale(parseInt(e.target.value))}
+              className="w-full px-3 py-2 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg text-white focus:border-blue-500 focus:outline-none"
+              disabled={isGenerating}
+            >
+              <option value={1}>1x (Standard)</option>
+              <option value={2}>2x (High Quality)</option>
+              <option value={3}>3x (Ultra HD)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Data Preview */}
+        {firms.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-gray-400">Data Preview</h3>
+              <Badge variant="outline" className="text-xs">
+                {firms.length} firms loaded
+              </Badge>
+            </div>
+            <div className="max-h-64 overflow-y-auto border border-[#2a2a2a] rounded-lg">
+              <table className="w-full text-xs">
+                <thead className="bg-[#2a2a2a] sticky top-0">
+                  <tr>
+                    <th className="p-2 text-left text-gray-400">#</th>
+                    <th className="p-2 text-left text-gray-400">Firm</th>
+                    <th className="p-2 text-left text-gray-400">Rank</th>
+                    <th className="p-2 text-left text-gray-400">Revenue</th>
+                    <th className="p-2 text-left text-gray-400">Traffic</th>
+                    <th className="p-2 text-left text-gray-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {firms.slice(0, 15).map((firm, index) => {
+                    const isValid = firm.firmName && firm.firmName.trim() !== '' &&
+                                    firm.currentPosition > 0 &&
+                                    firm.revenueCurrent >= 0 &&
+                                    !isNaN(firm.currentPosition) &&
+                                    !isNaN(firm.revenueCurrent)
+
+                    return (
+                      <tr key={index} className={`border-t border-[#2a2a2a] hover:bg-[#2a2a2a]/30 ${
+                        !isValid ? 'bg-red-500/10' : ''
+                      }`}>
+                        <td className="p-2 text-gray-400 font-mono">{index + 1}</td>
+                        <td className={`p-2 font-medium ${
+                          !firm.firmName || firm.firmName.trim() === '' ? 'text-red-400' : 'text-white'
+                        }`}>
+                          {firm.firmName || '(empty)'}
+                        </td>
+                        <td className={`p-2 ${
+                          firm.currentPosition <= 0 || isNaN(firm.currentPosition) ? 'text-red-400' : 'text-gray-300'
+                        }`}>
+                          #{firm.currentPosition || 'N/A'}
+                          {firm.previousPosition !== firm.currentPosition && firm.previousPosition > 0 && (
+                            <span className={`ml-1 text-xs ${
+                              firm.currentPosition < firm.previousPosition ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {firm.currentPosition < firm.previousPosition ? '↑' : '↓'}
+                            </span>
+                          )}
+                        </td>
+                        <td className={`p-2 ${
+                          firm.revenueCurrent < 0 || isNaN(firm.revenueCurrent) ? 'text-red-400' : 'text-gray-300'
+                        }`}>
+                          ${firm.revenueCurrent?.toLocaleString() || 'N/A'}
+                          {!isNaN(firm.revenueChange) && (
+                            <span className={`ml-1 text-xs ${
+                              firm.revenueChange > 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {firm.revenueChange > 0 ? '+' : ''}{firm.revenueChange.toFixed(1)}%
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-2 text-gray-300">
+                          {firm.trafficCurrent?.toLocaleString() || 'N/A'}
+                        </td>
+                        <td className="p-2">
+                          {isValid ? (
+                            <span className="text-xs text-green-400">✓</span>
+                          ) : (
+                            <span className="text-xs text-red-400" title="Invalid data">✗</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {firms.length > 10 && (
+                <div className="p-2 text-center border-t border-[#2a2a2a] bg-[#1a1a1a]">
+                  <span className="text-xs text-gray-400">
+                    ... and {firms.length - 10} more firms
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Progress */}
         {(isGenerating || progress.status !== 'idle') && (
           <div className="space-y-3">
@@ -312,7 +633,14 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
               </div>
             )}
             {progress.status === 'error' && (
-              <Badge variant="destructive">{progress.error}</Badge>
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <span className="text-red-400 text-sm font-medium">❌ Error:</span>
+                  <pre className="text-xs text-red-300 whitespace-pre-wrap font-mono">
+                    {progress.error}
+                  </pre>
+                </div>
+              </div>
             )}
           </div>
         )}

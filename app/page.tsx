@@ -1,7 +1,7 @@
 "use client"
 
 import Header from '@/components/Header'
-import PopularityLeaderboard from '@/components/PopularityLeaderboard'
+import PopularityLeaderboardStatic from '@/components/PopularityLeaderboardStatic'
 import RevenueCard from '@/components/RevenueCard'
 import TrafficCard from '@/components/TrafficCard'
 import FavoriteCard from '@/components/FavoriteCard'
@@ -57,28 +57,67 @@ export default function Home() {
       }}
     >
       <div className="w-full max-w-[1560px] max-h-[800px] flex flex-col relative">
-        <Header 
-          onLogoChange={setCurrentLogoId} 
+        <Header
+          onLogoChange={setCurrentLogoId}
           onFirmNameChange={setCurrentFirmName}
+          currentFirmName={currentFirmName}
+          currentLogoId={currentLogoId}
+          isStatic={true}
           category={category}
         />
         
         <div className="p-6 flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
             <div className="lg:col-span-1 h-full">
-              <PopularityLeaderboard 
+              <PopularityLeaderboardStatic
                 currentLogoId={currentLogoId}
                 currentFirmName={currentFirmName}
+                firmData={{
+                  firmName: currentFirmName,
+                  currentPosition: 1,
+                  previousPosition: 1,
+                  revenuePrevious: 145000,
+                  revenueCurrent: 151280,
+                  revenueChange: 4.3,
+                  visitsPinkPrevious: 15890,
+                  visitsPinkCurrent: 16256,
+                  favoritesAdded: 366,
+                  favoritesChange: 2.3,
+                  visitsAzulPrevious: 52340,
+                  trafficCurrent: 58600,
+                  trafficIncrease: 12.0,
+                  cfdShare: 58.6
+                }}
+                competitors={[]}
+                isStatic={true}
               />
             </div>
             
             <div className="lg:col-span-1 flex flex-col gap-6 h-full">
               <div className="h-[100%]">
-                <RevenueCard />
+                <RevenueCard
+                  previousWeek={145000}
+                  currentWeek={151280}
+                  isStatic={true}
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
-                <TrafficCard />
-                <FavoriteCard />
+                <TrafficCard
+                  previousWeek={52340}
+                  currentWeek={58600}
+                  cfdShareValue={58.6}
+                  isStatic={true}
+                  category={category}
+                />
+                <FavoriteCard
+                  previousWeek={15890}
+                  currentWeek={16256}
+                  favoritesAdded={366}
+                  favoritesChange={2.3}
+                  currentPosition={1}
+                  previousPosition={1}
+                  isStatic={true}
+                />
               </div>
             </div>
           </div>

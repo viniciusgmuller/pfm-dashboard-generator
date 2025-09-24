@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { CompanyLogo, LogoSelector } from '@/components/logos'
 import { getLogoById } from '@/data/logoData'
@@ -13,17 +13,41 @@ interface HeaderProps {
   currentLogoId?: string
   isStatic?: boolean
   category?: DashboardCategory
+  dynamicCurrentWeek?: string
+  dynamicTotalVisits?: number
 }
 
-const Header: React.FC<HeaderProps> = ({ onLogoChange, onFirmNameChange, currentFirmName, currentLogoId: propLogoId, isStatic = false, category = 'prop-trading' }) => {
+const Header: React.FC<HeaderProps> = ({
+  onLogoChange,
+  onFirmNameChange,
+  currentFirmName,
+  currentLogoId: propLogoId,
+  isStatic = false,
+  category = 'prop-trading',
+  dynamicCurrentWeek,
+  dynamicTotalVisits
+}) => {
   const [firmName, setFirmName] = useState(currentFirmName || 'Funding Pips')
-  const [currentWeek, setCurrentWeek] = useState(globalConfig.currentWeek)
+  const [currentWeek, setCurrentWeek] = useState(dynamicCurrentWeek || globalConfig.currentWeek)
   const [currentLogoId, setCurrentLogoId] = useState(propLogoId || 'fundingpips')
-  const [pfmVisitors, setPfmVisitors] = useState(globalConfig.categories[category].visitors)
+  const [pfmVisitors, setPfmVisitors] = useState(dynamicTotalVisits || globalConfig.categories[category].visitors)
   const [editingFirmName, setEditingFirmName] = useState(false)
   const [editingCurrentWeek, setEditingCurrentWeek] = useState(false)
   const [editingPfmVisitors, setEditingPfmVisitors] = useState(false)
   const [showLogoSelector, setShowLogoSelector] = useState(false)
+
+  // Update values when dynamic props change (for generated dashboards)
+  useEffect(() => {
+    if (dynamicCurrentWeek) {
+      setCurrentWeek(dynamicCurrentWeek)
+    }
+  }, [dynamicCurrentWeek])
+
+  useEffect(() => {
+    if (dynamicTotalVisits) {
+      setPfmVisitors(dynamicTotalVisits)
+    }
+  }, [dynamicTotalVisits])
 
   const formatNumber = (num: number): string => {
     return new Intl.NumberFormat('en-US').format(num)
