@@ -3,11 +3,12 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Upload, Play, Download, Loader2, Calendar, Users, Settings } from 'lucide-react'
+import { Upload, Play, Download, Loader2, Calendar, Users, Settings, AlertCircle } from 'lucide-react'
 import { getContextualRanking } from '@/lib/csv-utils'
 import { parse } from 'csv-parse/browser/esm/sync'
 import { GeneratedDashboard, FirmData } from '@/types/dashboard'
 import { DashboardCategory } from '@/lib/globalConfig'
+import * as htmlToImage from 'html-to-image'
 
 interface DashboardGeneratorRealProps {
   onGenerationComplete?: (dashboards: GeneratedDashboard[]) => void
@@ -255,6 +256,90 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
     reader.readAsText(file)
   }, [])
 
+  // Client-side dashboard generation using html-to-image
+  const generateDashboardClient = useCallback(async (
+    dashboardData: any,
+    index: number,
+    total: number
+  ): Promise<GeneratedDashboard | null> => {
+    try {
+      const { firm, competitors, config } = dashboardData
+
+      // Create dashboard URL
+      const firmSlug = firm.firmName.replace(/\s+/g, '-').toLowerCase()
+      const firmDataParam = encodeURIComponent(JSON.stringify(firm))
+      const competitorsParam = encodeURIComponent(JSON.stringify(competitors))
+      const configParam = encodeURIComponent(JSON.stringify(config))
+
+      const dashboardUrl = `/dashboard/${firmSlug}?data=${firmDataParam}&competitors=${competitorsParam}&category=${config.category}&config=${configParam}`
+
+      // Open dashboard in iframe and capture it
+      return new Promise((resolve) => {
+        // Create hidden iframe
+        const iframe = document.createElement('iframe')
+        iframe.style.position = 'fixed'
+        iframe.style.width = '1560px'
+        iframe.style.height = '850px'
+        iframe.style.left = '-9999px'
+        iframe.style.top = '-9999px'
+        iframe.src = dashboardUrl
+
+        document.body.appendChild(iframe)
+
+        iframe.onload = async () => {
+          // Wait for dashboard to render
+          await new Promise(r => setTimeout(r, 3000))
+
+          try {
+            // Get iframe document
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+            if (!iframeDoc) throw new Error('Could not access iframe')
+
+            // Generate image from iframe content
+            const dataUrl = await htmlToImage.toPng(iframeDoc.body, {
+              quality: 0.95,
+              pixelRatio: 2,
+              width: 1560,
+              height: 850
+            })
+
+            // Convert data URL to blob
+            const response = await fetch(dataUrl)
+            const blob = await response.blob()
+            const url = URL.createObjectURL(blob)
+
+            // Extract base64
+            const base64 = dataUrl.split(',')[1]
+
+            const dashboard: GeneratedDashboard = {
+              firmName: firm.firmName,
+              filename: `${firm.firmName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '')}.png`,
+              url,
+              blob,
+              timestamp: Date.now()
+            }
+
+            // Clean up
+            document.body.removeChild(iframe)
+            resolve(dashboard)
+          } catch (error) {
+            console.error('Error generating dashboard image:', error)
+            document.body.removeChild(iframe)
+            resolve(null)
+          }
+        }
+
+        iframe.onerror = () => {
+          document.body.removeChild(iframe)
+          resolve(null)
+        }
+      })
+    } catch (error) {
+      console.error(`Error generating dashboard for ${dashboardData.firm.firmName}:`, error)
+      return null
+    }
+  }, [])
+
   const startGeneration = useCallback(async () => {
     if (firms.length === 0) {
       setProgress(prev => ({
@@ -288,13 +373,91 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
     setProgress({
       total: firms.length,
       completed: 0,
-      current: 'Sending data to server for generation...',
+      current: 'Detecting environment...',
       status: 'processing',
       error: ''
     })
     setGeneratedDashboards([])
 
+    // Check if we're in production (Vercel)
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+
     try {
+      if (isProduction) {
+        // Production: Use client-side generation
+        setProgress(prev => ({
+          ...prev,
+          current: 'Using client-side generation for production environment...'
+        }))
+
+        // First get the dashboard data from the API
+        const formData = new FormData()
+        formData.append('csv', csvContent)
+        formData.append('currentWeek', currentWeek)
+        formData.append('totalVisits', totalVisits.toString())
+        formData.append('category', category)
+
+        const response = await fetch('/api/generate-client', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        if (!data.success || !data.dashboards) {
+          throw new Error('Failed to get dashboard data')
+        }
+
+        // Generate dashboards client-side
+        const dashboards: GeneratedDashboard[] = []
+        for (let i = 0; i < data.dashboards.length; i++) {
+          const dashboardData = data.dashboards[i]
+
+          setProgress(prev => ({
+            ...prev,
+            completed: i,
+            current: `Generating dashboard for ${dashboardData.firm.firmName} (${i + 1}/${data.dashboards.length})...`
+          }))
+
+          const dashboard = await generateDashboardClient(dashboardData, i, data.dashboards.length)
+
+          if (dashboard) {
+            dashboards.push(dashboard)
+            setGeneratedDashboards(prev => [...prev, dashboard])
+          }
+
+          setProgress(prev => ({
+            ...prev,
+            completed: i + 1
+          }))
+        }
+
+        if (dashboards.length === 0) {
+          throw new Error('No dashboards were generated')
+        }
+
+        setProgress(prev => ({
+          ...prev,
+          status: 'completed',
+          current: `Successfully generated ${dashboards.length} dashboards!`
+        }))
+
+        if (onGenerationComplete) {
+          onGenerationComplete(dashboards)
+        }
+
+        return // Exit early for client-side generation
+      }
+
+      // Development: Use server-side generation with Puppeteer
+      setProgress(prev => ({
+        ...prev,
+        current: 'Using server-side generation for development...'
+      }))
+
       // Prepare form data for API
       const formData = new FormData()
       formData.append('csv', csvContent)
@@ -303,70 +466,143 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
       formData.append('category', category)
       formData.append('scale', scale.toString())
 
-      // Call the API endpoint
+      // Use fetch with streaming response
       const response = await fetch('/api/generate', {
         method: 'POST',
         body: formData
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.details || error.error || 'Failed to generate dashboards')
+        throw new Error(`Server error: ${response.status} ${response.statusText}`)
       }
 
-      const result = await response.json()
-
-      if (!result.success || !result.dashboards || result.dashboards.length === 0) {
-        throw new Error('No dashboards were generated')
+      // Check if response is SSE
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('text/event-stream')) {
+        throw new Error('Server did not return a stream response')
       }
 
-      // Convert base64 data to blobs and URLs for display/download
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('Failed to get response reader')
+      }
+
+      const decoder = new TextDecoder()
       const dashboards: GeneratedDashboard[] = []
+      let buffer = ''
 
-      for (const dashboard of result.dashboards) {
-        setProgress(prev => ({
-          ...prev,
-          current: `Processing ${dashboard.firmName}...`,
-          completed: dashboards.length
-        }))
+      // Read the stream
+      while (true) {
+        const { done, value } = await reader.read()
 
-        // Convert base64 to blob
-        const byteCharacters = atob(dashboard.data)
-        const byteNumbers = new Array(byteCharacters.length)
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i)
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6))
+
+              switch (data.type) {
+                case 'start':
+                  setProgress(prev => ({
+                    ...prev,
+                    total: data.total,
+                    current: data.message || 'Starting generation...',
+                    status: 'processing'
+                  }))
+                  break
+
+                case 'progress':
+                  setProgress(prev => ({
+                    ...prev,
+                    completed: data.completed,
+                    current: data.message || `Processing ${data.current}...`,
+                    status: 'processing'
+                  }))
+                  break
+
+                case 'dashboard':
+                  // Process individual dashboard
+                  if (data.dashboard) {
+                    const dashboard = data.dashboard
+
+                    // Convert base64 to blob
+                    const byteCharacters = atob(dashboard.data)
+                    const byteNumbers = new Array(byteCharacters.length)
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                      byteNumbers[i] = byteCharacters.charCodeAt(i)
+                    }
+                    const byteArray = new Uint8Array(byteNumbers)
+                    const blob = new Blob([byteArray], { type: 'image/png' })
+                    const url = URL.createObjectURL(blob)
+
+                    const generatedDashboard: GeneratedDashboard = {
+                      firmName: dashboard.firmName,
+                      filename: dashboard.filename,
+                      url,
+                      blob,
+                      timestamp: Date.now()
+                    }
+
+                    dashboards.push(generatedDashboard)
+                    setGeneratedDashboards(prev => [...prev, generatedDashboard])
+
+                    // Update progress
+                    setProgress(prev => ({
+                      ...prev,
+                      completed: data.completed,
+                      current: `Completed ${dashboard.firmName} (${data.completed}/${data.total})`,
+                      status: 'processing'
+                    }))
+                  }
+                  break
+
+                case 'complete':
+                  setProgress(prev => ({
+                    ...prev,
+                    completed: data.total,
+                    status: 'completed',
+                    current: data.message || `Successfully generated ${dashboards.length} dashboards!`,
+                    error: ''
+                  }))
+
+                  if (onGenerationComplete && dashboards.length > 0) {
+                    onGenerationComplete(dashboards)
+                  }
+                  break
+
+                case 'error':
+                  console.error('Stream error:', data)
+                  setProgress(prev => ({
+                    ...prev,
+                    status: 'error',
+                    error: data.message || data.details || 'An error occurred during generation',
+                    current: data.firm ? `Failed on ${data.firm}` : 'Generation failed'
+                  }))
+
+                  // Continue processing other dashboards even if one fails
+                  if (data.firm) {
+                    console.warn(`Failed to generate dashboard for ${data.firm}, continuing...`)
+                  }
+                  break
+
+                default:
+                  console.log('Unknown event type:', data.type)
+              }
+            } catch (error) {
+              console.error('Error parsing SSE data:', error, 'Line:', line)
+            }
+          }
         }
-        const byteArray = new Uint8Array(byteNumbers)
-        const blob = new Blob([byteArray], { type: 'image/png' })
-        const url = URL.createObjectURL(blob)
-
-        const generatedDashboard: GeneratedDashboard = {
-          firmName: dashboard.firmName,
-          filename: dashboard.filename,
-          url,
-          blob,
-          timestamp: Date.now()
-        }
-
-        dashboards.push(generatedDashboard)
-        setGeneratedDashboards(prev => [...prev, generatedDashboard])
       }
 
-      const finalStatus = dashboards.length > 0 ? 'completed' : 'error'
-      const statusMessage = dashboards.length > 0
-        ? `Successfully generated ${dashboards.length} dashboards!`
-        : 'Failed to generate any dashboards'
-
-      setProgress(prev => ({
-        ...prev,
-        completed: firms.length,
-        status: finalStatus,
-        current: statusMessage,
-        error: ''
-      }))
-
-      if (onGenerationComplete && dashboards.length > 0) {
-        onGenerationComplete(dashboards)
+      // Final check
+      if (dashboards.length === 0) {
+        throw new Error('No dashboards were generated')
       }
 
     } catch (error) {
@@ -611,34 +847,115 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
 
         {/* Progress */}
         {(isGenerating || progress.status !== 'idle') && (
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Progress</span>
-              <span className="text-white">
+          <div className="space-y-4 p-4 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg">
+            {/* Progress Header */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-400">Generation Progress</span>
+                {progress.status === 'processing' && (
+                  <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400 animate-pulse">
+                    Live
+                  </Badge>
+                )}
+                {progress.status === 'completed' && (
+                  <Badge variant="outline" className="text-xs border-green-500/30 text-green-400">
+                    Complete
+                  </Badge>
+                )}
+                {progress.status === 'error' && (
+                  <Badge variant="outline" className="text-xs border-red-500/30 text-red-400">
+                    Error
+                  </Badge>
+                )}
+              </div>
+              <span className="text-sm font-mono text-white">
                 {progress.completed} / {progress.total}
+                {progress.total > 0 && (
+                  <span className="text-gray-400 ml-2">
+                    ({Math.round((progress.completed / progress.total) * 100)}%)
+                  </span>
+                )}
               </span>
             </div>
-            <div className="w-full bg-[#2a2a2a] rounded-full h-2">
+
+            {/* Progress Bar */}
+            <div className="w-full bg-[#2a2a2a] rounded-full h-3 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(progress.completed / progress.total) * 100}%` }}
-              />
+                className={`h-3 rounded-full transition-all duration-500 ease-out ${
+                  progress.status === 'error'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600'
+                    : progress.status === 'completed'
+                    ? 'bg-gradient-to-r from-green-500 to-green-600'
+                    : 'bg-gradient-to-r from-blue-500 to-cyan-500'
+                }`}
+                style={{
+                  width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%`,
+                  boxShadow: progress.status === 'processing' ? '0 0 20px rgba(59, 130, 246, 0.5)' : 'none'
+                }}
+              >
+                {progress.status === 'processing' && (
+                  <div className="h-full w-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+                )}
+              </div>
             </div>
+
+            {/* Current Status */}
             {progress.current && (
-              <div className="flex items-center gap-2">
-                {isGenerating && <Loader2 className="w-4 h-4 animate-spin text-blue-400" />}
-                <p className="text-xs text-gray-400">
-                  {isGenerating ? 'Generating:' : ''} {progress.current}
-                </p>
+              <div className="flex items-center gap-3 p-3 bg-[#2a2a2a]/50 rounded-lg">
+                {progress.status === 'processing' && (
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-400 flex-shrink-0" />
+                )}
+                {progress.status === 'completed' && (
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-medium truncate">
+                    {progress.current}
+                  </p>
+                  {progress.status === 'processing' && progress.total > 0 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Processing dashboard {progress.completed + 1} of {progress.total}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
-            {progress.status === 'error' && (
+
+            {/* Error Display */}
+            {progress.status === 'error' && progress.error && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <span className="text-red-400 text-sm font-medium">❌ Error:</span>
-                  <pre className="text-xs text-red-300 whitespace-pre-wrap font-mono">
+                  <span className="text-red-400 text-sm font-medium">Error:</span>
+                  <pre className="text-xs text-red-300 whitespace-pre-wrap font-mono flex-1">
                     {progress.error}
                   </pre>
+                </div>
+              </div>
+            )}
+
+            {/* Live Generation List */}
+            {isGenerating && generatedDashboards.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-400 font-medium">Recently Completed:</p>
+                <div className="max-h-32 overflow-y-auto space-y-1">
+                  {generatedDashboards.slice(-5).reverse().map((dashboard, index) => (
+                    <div
+                      key={dashboard.timestamp || index}
+                      className="flex items-center gap-2 p-2 bg-[#2a2a2a]/30 rounded animate-fadeIn"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-xs text-gray-300 truncate">
+                        {dashboard.firmName}
+                      </span>
+                      <span className="text-xs text-gray-500 ml-auto">
+                        {dashboard.filename}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

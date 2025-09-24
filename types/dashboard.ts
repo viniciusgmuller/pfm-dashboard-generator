@@ -43,7 +43,9 @@ export interface GeneratedDashboard {
   firmName: string
   filename: string
   url: string
-  generatedAt: Date
+  blob?: Blob
+  timestamp?: number
+  generatedAt?: Date
   size?: number
 }
 

@@ -4,6 +4,8 @@ import { readFileSync } from 'fs'
 import path from 'path'
 import { parseCSVContent } from '@/lib/csv-utils'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams

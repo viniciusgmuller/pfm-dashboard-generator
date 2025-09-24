@@ -5,7 +5,7 @@ import PopularityLeaderboardStatic from '@/components/PopularityLeaderboardStati
 import RevenueCard from '@/components/RevenueCard'
 import TrafficCard from '@/components/TrafficCard'
 import FavoriteCard from '@/components/FavoriteCard'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { Wand2, Layers } from 'lucide-react'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const categoryParam = searchParams.get('category') as DashboardCategory | null
@@ -72,22 +72,7 @@ export default function Home() {
               <PopularityLeaderboardStatic
                 currentLogoId={currentLogoId}
                 currentFirmName={currentFirmName}
-                firmData={{
-                  firmName: currentFirmName,
-                  currentPosition: 1,
-                  previousPosition: 1,
-                  revenuePrevious: 145000,
-                  revenueCurrent: 151280,
-                  revenueChange: 4.3,
-                  visitsPinkPrevious: 15890,
-                  visitsPinkCurrent: 16256,
-                  favoritesAdded: 366,
-                  favoritesChange: 2.3,
-                  visitsAzulPrevious: 52340,
-                  trafficCurrent: 58600,
-                  trafficIncrease: 12.0,
-                  cfdShare: 58.6
-                }}
+                firmData={undefined}
                 competitors={[]}
                 isStatic={true}
               />
@@ -166,5 +151,17 @@ export default function Home() {
         </Link>
       </div>
     </main>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#100E0F]">
+        <div className="text-white">Loading...</div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }

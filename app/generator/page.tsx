@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DashboardGeneratorReal from '@/components/DashboardGeneratorReal'
+import DashboardGeneratorSimple from '@/components/DashboardGeneratorSimple'
 import GeneratedDashboards from '@/components/GeneratedDashboards'
 import { GeneratedDashboard } from '@/types/dashboard'
 import { ArrowLeft, Zap } from 'lucide-react'
@@ -9,6 +10,16 @@ import Link from 'next/link'
 
 export default function GeneratorPage() {
   const [generatedDashboards, setGeneratedDashboards] = useState<GeneratedDashboard[]>([])
+  const [isProduction, setIsProduction] = useState(false)
+
+  useEffect(() => {
+    // Detect if we're in production
+    setIsProduction(
+      typeof window !== 'undefined' &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1'
+    )
+  }, [])
 
   const handleGenerationComplete = (dashboards: GeneratedDashboard[]) => {
     setGeneratedDashboards(dashboards)
@@ -53,14 +64,20 @@ export default function GeneratorPage() {
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Left Column - Generator */}
           <div className="space-y-6">
-            <DashboardGeneratorReal 
-              onGenerationComplete={handleGenerationComplete}
-            />
+            {isProduction ? (
+              <DashboardGeneratorSimple
+                onGenerationComplete={handleGenerationComplete}
+              />
+            ) : (
+              <DashboardGeneratorReal
+                onGenerationComplete={handleGenerationComplete}
+              />
+            )}
           </div>
 
           {/* Right Column - Generated Dashboards */}
           <div>
-            <GeneratedDashboards 
+            <GeneratedDashboards
               dashboards={generatedDashboards}
             />
           </div>
