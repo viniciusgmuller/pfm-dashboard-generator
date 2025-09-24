@@ -199,10 +199,15 @@ export default function DashboardGeneratorSimple({ onGenerationComplete }: Dashb
 
       if (workerUrl) {
         try {
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 5000)
+
           const healthResponse = await fetch(`${workerUrl}/health`, {
             method: 'GET',
-            timeout: 5000
+            signal: controller.signal
           })
+
+          clearTimeout(timeoutId)
           useWorker = healthResponse.ok
 
           if (useWorker) {
