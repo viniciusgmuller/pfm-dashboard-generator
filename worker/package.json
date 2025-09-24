@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "install": "npm ci",
+    "build": "echo 'Build complete'"
   },
   "dependencies": {
     "express": "^4.18.2",

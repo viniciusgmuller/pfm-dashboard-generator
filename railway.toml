@@ -1,9 +1,10 @@
 [build]
 builder = "nixpacks"
+buildCommand = "cd worker && npm ci"
 
 [deploy]
 startCommand = "cd worker && npm start"
 restartPolicyType = "on_failure"
 
-[build.env]
-NIXPACKS_PATH = "worker"
+[variables]
+NODE_ENV = "production"
