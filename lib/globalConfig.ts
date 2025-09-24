@@ -5,22 +5,22 @@ export type DashboardCategory = 'prop-trading' | 'futures'
 
 export const globalConfig = {
   // Week period displayed in header
-  currentWeek: 'Sep 5 - Sep 11',
+  currentWeek: 'Sep 12 - Sep 18',
   
   // Total visitors for the platform (not per company)
-  pfmVisitors: 169031,
+  pfmVisitors: 119734,
   
   // Category-specific configurations
   categories: {
     'prop-trading': {
       name: 'Prop Trading',
       csvFile: 'data.csv',
-      visitors: 169031,
+      visitors: 119734,
     },
     'futures': {
       name: 'Futures',
       csvFile: 'datafutures.csv', 
-      visitors: 169031, // Using same value as CFD
+      visitors: 119734, // Using same value as CFD
     }
   },
   
