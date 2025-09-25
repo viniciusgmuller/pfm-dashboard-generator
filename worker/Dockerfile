@@ -28,14 +28,14 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from worker directory
+COPY worker/package*.json ./
 
 # Install dependencies
 RUN npm ci --only=production
 
-# Copy application files
-COPY . .
+# Copy application files from worker directory
+COPY worker/ .
 
 # Expose port
 EXPOSE 3001
