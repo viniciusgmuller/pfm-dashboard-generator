@@ -1,0 +1,27 @@
+# fly.toml app configuration file generated for dashboard-gen-pfm on 2025-09-25T11:01:13-03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'dashboard-gen-pfm'
+primary_region = 'gru'
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '2gb'
+  cpu_kind = 'shared'
+  cpus = 1
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"

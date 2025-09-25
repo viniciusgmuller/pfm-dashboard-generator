@@ -55,6 +55,7 @@ function parseCSVContent(csvContent: string): FirmData[] {
 }
 
 export default function DashboardGeneratorSimple({ onGenerationComplete }: DashboardGeneratorSimpleProps) {
+
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvContent, setCsvContent] = useState<string>('')
   const [firms, setFirms] = useState<FirmData[]>([])
@@ -193,49 +194,32 @@ export default function DashboardGeneratorSimple({ onGenerationComplete }: Dashb
     setGeneratedDashboards([])
 
     try {
-      // Check if Railway worker is available
-      const workerUrl = process.env.NEXT_PUBLIC_RAILWAY_WORKER_URL
-      let useWorker = false
+      // FORCE USE FLY.IO WORKER - SKIP HEALTH CHECK
+      console.log('=== STARTING GENERATION WITH FLY.IO WORKER ===')
 
-      if (workerUrl) {
-        try {
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 5000)
+      const useWorker = true // ALWAYS USE WORKER
+      console.log('FORCING Fly.io worker usage!')
 
-          const healthResponse = await fetch(`${workerUrl}/health`, {
-            method: 'GET',
-            signal: controller.signal
-          })
-
-          clearTimeout(timeoutId)
-          useWorker = healthResponse.ok
-
-          if (useWorker) {
-            setProgress(prev => ({
-              ...prev,
-              current: 'Railway worker detected - using screenshot generation!'
-            }))
-          }
-        } catch (error) {
-          console.log('Railway worker not available, using fallback mode')
-        }
-      }
+      setProgress(prev => ({
+        ...prev,
+        current: 'Using Fly.io worker for screenshot generation!'
+      }))
 
       if (useWorker) {
-        // Use Railway worker for real screenshots
+        // Use Fly.io worker for real screenshots
         const formData = new FormData()
         formData.append('csv', csvContent)
         formData.append('currentWeek', currentWeek)
         formData.append('totalVisits', totalVisits.toString())
         formData.append('category', category)
 
-        const response = await fetch('/api/generate-railway', {
+        const response = await fetch('/api/generate-worker', {
           method: 'POST',
           body: formData
         })
 
         if (!response.ok) {
-          throw new Error(`Railway generation failed: ${response.status}`)
+          throw new Error(`Worker generation failed: ${response.status}`)
         }
 
         const reader = response.body?.getReader()
@@ -339,7 +323,7 @@ export default function DashboardGeneratorSimple({ onGenerationComplete }: Dashb
         // Fallback: generate dashboard URLs only
         setProgress(prev => ({
           ...prev,
-          current: 'Railway worker not available - generating dashboard links...'
+          current: 'Fly.io worker not available - generating dashboard links...'
         }))
 
         const dashboards: GeneratedDashboard[] = []

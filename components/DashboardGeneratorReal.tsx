@@ -56,6 +56,14 @@ function parseCSVContent(csvContent: string): FirmData[] {
 }
 
 export default function DashboardGeneratorReal({ onGenerationComplete }: DashboardGeneratorRealProps) {
+  // Log when component mounts
+  useEffect(() => {
+    console.log('🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴')
+    console.log('📌 DashboardGeneratorReal Component Loaded!')
+    console.log('🎯 This component will use FLY.IO WORKER')
+    console.log('🌐 Endpoint: /api/generate-worker')
+    console.log('🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴')
+  }, [])
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvContent, setCsvContent] = useState<string>('')
   const [firms, setFirms] = useState<FirmData[]>([])
@@ -466,11 +474,20 @@ export default function DashboardGeneratorReal({ onGenerationComplete }: Dashboa
       formData.append('category', category)
       formData.append('scale', scale.toString())
 
-      // Use fetch with streaming response
-      const response = await fetch('/api/generate', {
+      // Use Fly.io worker through generate-worker API
+      console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+      console.log('🎯 USING FLY.IO WORKER FOR DASHBOARD GENERATION! 🎯')
+      console.log('📡 Calling /api/generate-worker endpoint...')
+      console.log('🌐 This will connect to: https://dashboard-gen-pfm.fly.dev')
+      console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+
+      const response = await fetch('/api/generate-worker', {
         method: 'POST',
         body: formData
       })
+
+      console.log('✅ Response received from /api/generate-worker:', response.status)
+      console.log('📊 Response OK:', response.ok)
 
       if (!response.ok) {
         throw new Error(`Server error: ${response.status} ${response.statusText}`)

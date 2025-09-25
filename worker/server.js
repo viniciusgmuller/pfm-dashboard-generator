@@ -8,10 +8,12 @@ dotenv.config()
 const app = express()
 const port = process.env.PORT || 3001
 
-// Middleware
+// Middleware - Allow all origins for now
 app.use(cors({
-  origin: ['https://pfm-insights-d0uvkk38f-viniciusgmuller-3964s-projects.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
-  credentials: true
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }))
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb' }))
@@ -185,7 +187,8 @@ app.post('/generate-batch', async (req, res) => {
         })
 
         // Generate individual screenshot
-        const screenshotResponse = await fetch(`${req.protocol}://${req.get('host')}/generate-screenshot`, {
+        // Use localhost since we're calling our own endpoint
+        const screenshotResponse = await fetch(`http://localhost:3001/generate-screenshot`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dashboard)
