@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
     // Use puppeteer-core with chromium for Vercel
     const browser = await puppeteer.launch({
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
+      defaultViewport: { width: 1560, height: 850 },
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: true,
     })
 
     const page = await browser.newPage()
