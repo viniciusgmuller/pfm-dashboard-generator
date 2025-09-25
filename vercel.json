@@ -1,15 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "framework": "nextjs",
-  "env": {
-    "NEXT_PUBLIC_RAILWAY_WORKER_URL": "@railway_worker_url",
-    "RAILWAY_WORKER_URL": "@railway_worker_url"
-  },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_RAILWAY_WORKER_URL": "@railway_worker_url",
-      "RAILWAY_WORKER_URL": "@railway_worker_url"
-    }
-  }
+  "framework": "nextjs"
 }
