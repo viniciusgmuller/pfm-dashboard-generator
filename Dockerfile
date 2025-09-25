@@ -36,7 +36,9 @@ RUN npm ci --only=production
 
 # Copy application files from worker directory
 COPY worker/server.js .
-COPY worker/.env* ./ 2>/dev/null || true
+
+# Environment variable for port
+ENV PORT=3001
 
 # Expose port
 EXPOSE 3001
